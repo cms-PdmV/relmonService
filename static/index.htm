@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Relmon request (workflow) service</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap CSS -->
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Angularjs ... -->
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.11/angular.min.js"></script>
+    <!-- Angular ui Bootstrap -->
+    <script src="//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.12.0.js"></script>
+    
+    <script src="request_controllers.js"></script>
+  </head>
+  <body>
+
+<!-- BEGIN main -->
+    <div
+       ng-app="relmon_request_service_frontend"
+       id="main"
+       class="container"
+       ng-controller="Request_controller as request_controller">
+      
+<!-- BEGIN new RelMon request part -->
+      <h1>New RelMon request (workflow)</h1>
+      
+      <form name="requests_form" ng-submit="request_controller.try_submit()">
+        <tabset>
+          <tab ng-repeat="category in request_controller.sample_inputs"
+	       heading="{{category.name}}">
+            <div ng-repeat="list in category.lists">
+              <ng-form name="inner_form">
+                <h2>{{list.name}}</h2>
+                <textarea name="text" rows="6" cols"60" class="form-control"
+                          ng-model="list.data"
+                          ng-pattern="/^[a-zA-Z0-9_ \t\r\n]+$/">
+                </textarea>
+                <div class="text-danger text-center lead"
+                     ng-show="inner_form.text.$error.pattern">
+                  Only letters, numbers, underscores and whitespace allowed.
+                </div>
+              </ng-form>
+            </div>
+	    <label ng-if="category.name != 'Generator'" class="checkbox">
+	      <input type="checkbox" ng-model="category.HLT">
+	      HLT
+	    </label>
+          </tab>
+        </tabset>
+        <hr />
+        <label class="text">
+	  Name:
+          <input type="text"
+		 id="name_field"
+		 ng-model="request_controller.new_request_name"/>
+	</label>
+        <label >
+	  Threshold:
+          <input type="text" ng-model="request_controller.new_request_threshold"/>
+	</label>
+        <input type="submit" class="btn btn-primary"></input>
+      </form>
+<!-- END New RelMon request part -->
+
+      <hr />
+
+<!-- BEGIN Latest requests part -->
+      <h1>Latest requests</h1>
+
+<!-- TODO: make table beautiful -->
+      <table class="table table-striped table-bordered table-hover">
+        <thead>
+          <tr>
+            <th>Info</th>
+            <th>References</th>
+            <th>Compares</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr ng-repeat="request in request_controller.relmon_requests">
+            <td>
+              <ul class="list-group">
+                <li class="list-group-item">
+                  Id: {{request.id}}
+                </li>
+                <li class="list-group-item">
+                  Name: {{request.name}}
+                </li>
+                <li class="list-group-item">
+                  Status: {{request.status}}
+                </li>
+              </ul>
+            </td>
+	    <td colspan="2">
+	      {{request}}
+	    </td>
+          </tr>
+        </tbody>
+      </table>
+<!-- END Latest requests part -->
+      
+    </div>
+<!-- END main -->
+    
+  </body>
+</html>
