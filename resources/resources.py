@@ -37,13 +37,13 @@ class Sample(Resource):
                     if (sample["name"] == sample_name):
                         the_list[sidx] = request.json
                         break
-                percent_downloaded = utils.sample_percent_by_status(
+                perc_downloaded = utils.sample_percent_by_status(
                     relmon_request,
                     status=["downloaded"],
                     ignore=["NoDQMIO"])
                 if (
                         relmon_request["status"] == "ROOT" and
-                        percent_downloaded >= relmon_request["threshold"]):
+                        perc_downloaded >= float(relmon_request["threshold"])):
                     relmon_request["status"] = "downloaded"
                 write_RR_data()
                 return "OK", 200

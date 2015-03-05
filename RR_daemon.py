@@ -25,10 +25,24 @@ class RelmonReportDaemon(Thread):
                         continue
                     if (relmon_request["status"] in ["initial", "DQMIO"]):
                         self.update_ROOT_statuses(relmon_request)
-                        if (relmon_request["status"] == "ROOT"):
+                        perc_ROOT = utils.sample_percent_by_status(
+                            relmon_request,
+                            status=["ROOT"],
+                            ignore=["NoDQM"])
+                        print(perc_ROOT)
+                        if (perc_ROOT >= float(relmon_request["threshold"])):
                             thread.start_new_thread(
                                 utils.launch_downloads,
                                 (relmon_request["id"],))
+                            relmon_request["status"] = "downloading"
+                            write_RR_data()
+                    if (relmon_request["status"] == "downloading"):
+                        perc_ROOT = utils.sample_percent_by_status(
+                            relmon_request,
+                            status=["ROOT"],
+                            ignore=["NoDQM"])
+                        if (perc_ROOT < 100.0):
+                            self.update_ROOT_statuses(relmon_request)
                     if (relmon_request["status"] == "downloaded"):
                         thread.start_new_thread(
                             utils.launch_validation_matrix,
@@ -41,14 +55,11 @@ class RelmonReportDaemon(Thread):
         # end of while
 
     def update_ROOT_statuses(self, relmon_request):
-        if (relmon_request["status"] not in ["initial", "DQMIO"]):
+        if (relmon_request["status"] not in ["initial", "DQMIO", "ROOT"]):
             return
-        old_request_status = relmon_request["status"]
-        relmon_request["status"] = "ROOT"
         for category in relmon_request["categories"]:
             category_has_DQMIO_samples = False
-            category_has_waiting_samples = False
-            for lname, sample_list in category["lists"].iteritems():
+            for sample_list in category["lists"].itervalues():
                 for sample in sample_list:
                     if (sample["status"] in ["initial", "waiting"]):
                         (DQMIO_status, DQMIO_string) = (
@@ -57,13 +68,11 @@ class RelmonReportDaemon(Thread):
                         if (DQMIO_status == "DQMIO"):
                             sample["ROOT_file_name_part"] = (
                                 utils.get_ROOT_name_part(DQMIO_string))
-                        elif (DQMIO_status == "waiting"):
-                            category_has_waiting_samples = True
                     if (sample["status"] == "DQMIO"):
                         category_has_DQMIO_samples = True
-            if (category_has_DQMIO_samples):
-                category_has_DQMIO_samples = False
-                for sample_list in category["lists"].itervalues():
+            if (not category_has_DQMIO_samples):
+                continue
+            for sample_list in category["lists"].itervalues():
                     # TODO: handle failures (util.get_ROOT_file_urls)
                     # # failed CMSSW parsing
                     # relmon_request["status"] = "failed"
@@ -71,21 +80,17 @@ class RelmonReportDaemon(Thread):
                     # return
                     # # r.status_code != requests.codes.ok
                     # continue
-                    file_urls = utils.get_ROOT_file_urls(
-                        sample_list[0]["name"],
-                        category["name"])
-                    # TODO: handle failures
-                    if (not file_urls):
-                        print("sikna")
-                        return
-                    for sample_idx, sample in enumerate(sample_list):
-                        if (sample["status"] != "DQMIO"):
-                            continue
-                        if any(sample["ROOT_file_name_part"] in
-                               s for s in file_urls):
-                            sample["status"] = "ROOT"
-                        if (sample["status"] != "ROOT"):
-                            category_has_DQMIO_samples = True
-            if (category_has_DQMIO_samples or category_has_waiting_samples):
-                relmon_request["status"] = old_request_status
+                file_urls = utils.get_ROOT_file_urls(
+                    sample_list[0]["name"],
+                    category["name"])
+                # TODO: handle failures
+                if (not file_urls):
+                    print("sikna")
+                    return
+                for sample_idx, sample in enumerate(sample_list):
+                    if (sample["status"] != "DQMIO"):
+                        continue
+                    if any(sample["ROOT_file_name_part"] in
+                           s for s in file_urls):
+                        sample["status"] = "ROOT"
         write_RR_data()

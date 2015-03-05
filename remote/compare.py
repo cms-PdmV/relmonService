@@ -33,6 +33,7 @@ os.chdir(rr_path)
 logFile = open("validation.log", "w")
 
 for category in relmon_request["categories"]:
+    os.makedirs("reports/" + category["name"])
     print("iteration")
     command = ["ValidationMatrix.py",
                "-a",
