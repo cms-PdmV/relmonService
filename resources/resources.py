@@ -25,29 +25,25 @@ class Sample(Resource):
             return "Not Found", 404
 
     def put(self, request_id, category, sample_list, sample_name):
-        print("PUTTING")
-        sys.stdout.flush()
-        print(RR_data_lock)
-        sys.stdout.flush()
         with RR_data_lock:
-            print(RR_data_lock)
-            sys.stdout.flush()
             global RR_data
             try:
-                relmon_request \
-                    = [i for i in RR_data if i["id"] == request_id][0]
-                # print(relmon_request)
+                relmon_request = (
+                    [i for i in RR_data if i["id"] == request_id][0])
                 the_category = [i for i in relmon_request["categories"] if
                                 i["name"] == category][0]
-                # print(the_category)
                 the_list = the_category["lists"][sample_list]
                 for sidx, sample in enumerate(the_list):
                     if (sample["name"] == sample_name):
                         the_list[sidx] = request.json
                         break
+                percent_downloaded = utils.sample_percent_by_status(
+                    relmon_request,
+                    status=["downloaded"],
+                    ignore=["NoDQMIO"])
                 if (
                         relmon_request["status"] == "ROOT" and
-                        utils.enough_by_status(relmon_request, "downloaded")):
+                        percent_downloaded >= relmon_request["threshold"]):
                     relmon_request["status"] = "downloaded"
                 write_RR_data()
                 return "OK", 200
@@ -82,12 +78,10 @@ class Requests(Resource):
                       "name": args["name"],
                       "status": "initial",
                       "threshold": args["threshold"],
-                      "sample_count": 0,
                       "categories": []}
 
         for category in args["categories"]:
             for list_idx, sample_list in category["lists"].iteritems():
-                new_record["sample_count"] += len(sample_list)
                 for sample_idx, sample in enumerate(sample_list):
                     tmp_sample = {"name": sample, "status": "initial"}
                     sample_list[sample_idx] = tmp_sample

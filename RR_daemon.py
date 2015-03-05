@@ -18,12 +18,9 @@ class RelmonReportDaemon(Thread):
 
     def run(self):
         while True:
-            print(RR_data_lock)
             with RR_data_lock:
-                print(RR_data_lock)
                 global RR_data
                 for relmon_request in RR_data:
-                    relmon_request["status"]
                     if (relmon_request["status"] in ["done", "failed"]):
                         continue
                     if (relmon_request["status"] in ["initial", "DQMIO"]):
@@ -50,25 +47,23 @@ class RelmonReportDaemon(Thread):
         relmon_request["status"] = "ROOT"
         for category in relmon_request["categories"]:
             category_has_DQMIO_samples = False
-            category_has_initial_samples = False
+            category_has_waiting_samples = False
             for lname, sample_list in category["lists"].iteritems():
                 for sample in sample_list:
-                    if (sample["status"] == "initial"):
-                        DQMIO_string = (
-                            utils.get_DQMIO_datatier_name(sample["name"]))
-                        if (DQMIO_string):
-                            sample["status"] = "DQMIO"
+                    if (sample["status"] in ["initial", "waiting"]):
+                        (DQMIO_status, DQMIO_string) = (
+                            utils.get_DQMIO_status(sample["name"]))
+                        sample["status"] = DQMIO_status
+                        if (DQMIO_status == "DQMIO"):
                             sample["ROOT_file_name_part"] = (
                                 utils.get_ROOT_name_part(DQMIO_string))
-                        else:
-                            print("no DQMIO")
-                            category_has_initial_samples = True
+                        elif (DQMIO_status == "waiting"):
+                            category_has_waiting_samples = True
                     if (sample["status"] == "DQMIO"):
                         category_has_DQMIO_samples = True
             if (category_has_DQMIO_samples):
                 category_has_DQMIO_samples = False
                 for sample_list in category["lists"].itervalues():
-                    # file_urls = []
                     # TODO: handle failures (util.get_ROOT_file_urls)
                     # # failed CMSSW parsing
                     # relmon_request["status"] = "failed"
@@ -79,6 +74,7 @@ class RelmonReportDaemon(Thread):
                     file_urls = utils.get_ROOT_file_urls(
                         sample_list[0]["name"],
                         category["name"])
+                    # TODO: handle failures
                     if (not file_urls):
                         print("sikna")
                         return
@@ -90,6 +86,6 @@ class RelmonReportDaemon(Thread):
                             sample["status"] = "ROOT"
                         if (sample["status"] != "ROOT"):
                             category_has_DQMIO_samples = True
-            if (category_has_DQMIO_samples or category_has_initial_samples):
+            if (category_has_DQMIO_samples or category_has_waiting_samples):
                 relmon_request["status"] = old_request_status
         write_RR_data()

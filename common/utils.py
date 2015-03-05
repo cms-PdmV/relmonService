@@ -47,16 +47,21 @@ def get_ROOT_file_urls(CMSSW, category_name):
     return hyperlinks
 
 
-# FIXME: could be NONE
-def get_DQMIO_datatier_name(sample_name):
+# Given sample name returns DQMIO dataset status. If given sample
+# produces DQMIO dataset then the second object of the returned
+# tuple is the name of that DQMIO dataset
+def get_DQMIO_status(sample_name):
     r = requests.get(DATATIER_CHECK_URL + sample_name,
                      verify=False,
                      cert=(CERTIFICATE_PATH, KEY_PATH))
-    if ((r.status_code == requests.codes.ok) and ("DQMIO" in r.text)):
-        rjson = json.loads(r.text.replace('\'', '\"'))
-        return [i for i in rjson if "DQMIO" in i][0]
-    else:
-        return False
+    if (r.status_code == requests.codes.ok):
+        if ("DQMIO" in r.text):
+            rjson = json.loads(r.text.replace('\'', '\"'))
+            return ("DQMIO", [i for i in rjson if "DQMIO" in i][0])
+        # TODO: make "waiting" check real (this is a guess)
+        if ("None" in r.text):
+            return ("waiting", None)
+    return ("NoDQMIO", None)
 
 
 def get_ROOT_name_part(DQMIO_string):
@@ -68,16 +73,20 @@ def get_ROOT_name_part(DQMIO_string):
         return DS + "__" + CMSSW + '-' + PS + '-'
 
 
-def enough_by_status(relmon_request, status):
+def sample_percent_by_status(relmon_request, status, ignore):
+    not_ignored = 0
     with_status = 0
     for category in relmon_request["categories"]:
         for sample_list in category["lists"].itervalues():
             for sample in sample_list:
-                if (sample["status"] == status):
+                if (sample["status"] in ignore):
+                    continue
+                if (sample["status"] in status):
                     with_status += 1
-    return (
-        (float(with_status) / float(relmon_request["sample_count"]) * 100.0) >=
-        float(relmon_request["threshold"]))
+                not_ignored += 1
+    if (not_ignored == 0):
+        return 0.0
+    return (float(with_status) / float(not_ignored) * 100.0)
 
 
 # TODO: make one function instead of 2
