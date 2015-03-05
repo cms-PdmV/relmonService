@@ -33,7 +33,7 @@
                 <h2>{{list.name}}</h2>
                 <textarea name="text" rows="6" cols"60" class="form-control"
                           ng-model="list.data"
-                          ng-pattern="/^[a-zA-Z0-9_ \t\r\n]+$/">
+                          ng-pattern="/^[-a-zA-Z0-9_ \t\r\n]+$/">
                 </textarea>
                 <div class="text-danger text-center lead"
                      ng-show="inner_form.text.$error.pattern">

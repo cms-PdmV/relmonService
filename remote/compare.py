@@ -28,18 +28,23 @@ conn.close()
 
 rr_path = "requests/" + str(relmon_request["id"])
 os.chdir(rr_path)
+
+# TODO: handle failures
+logFile = open("validation.log", "w")
+
 for category in relmon_request["categories"]:
     print("iteration")
     command = ["ValidationMatrix.py",
                "-a",
                category["name"],
                "-o",
-               category["name"] + "Report",
+               "reports/" + category["name"],
                "--hash_name"]
     if (category["HLT"]):
         command.append("--HLT")
     print(" ".join(command))
-    proc = subprocess.Popen(command)
+    # TODO: handle failures
+    proc = subprocess.Popen(command, stdout=logFile)
     proc.wait()
     print("something schould have happened")
     print(category["name"])

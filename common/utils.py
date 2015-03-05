@@ -59,8 +59,7 @@ def get_DQMIO_datatier_name(sample_name):
         return False
 
 
-def get_ROOT_name_part(sample_name):
-    DQMIO_string = get_DQMIO_datatier_name(sample_name)
+def get_ROOT_name_part(DQMIO_string):
     if (DQMIO_string):
         parts = DQMIO_string.split('/')[1:]
         DS = parts[0]
