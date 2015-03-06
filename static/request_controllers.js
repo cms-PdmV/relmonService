@@ -36,7 +36,7 @@ function Request_controller($http, $modal) {
      * 
      */
     function reset_sample_inputs() {
-	me.sample_inputs = [];
+        me.sample_inputs = [];
         for (var x in report_categories) {
             var input = {
                 "name": report_categories[x],
@@ -50,12 +50,12 @@ function Request_controller($http, $modal) {
                         "data": ""
                     }
                 },
-                "HLT": "false"
+                "HLT": false
             };
             me.sample_inputs.push(input);
         }
-	me.new_request_name = "";
-	me.new_request_threshold = 100;
+        me.new_request_name = "";
+        me.new_request_threshold = 100;
     }
 
     /*
@@ -154,8 +154,8 @@ function Request_controller($http, $modal) {
             // TODO: format post_data text
             var modal_inst = this.open_confirm_modal(post_data);
             modal_inst.result.then(
-		function() {
-		    return submit_request(post_data);});
+                function() {
+                    return submit_request(post_data);});
         } catch (e) {
             if (e instanceof Request_controller_exception) {
                 this.open_error_modal(e.message);
