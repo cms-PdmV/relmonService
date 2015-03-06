@@ -33,19 +33,24 @@ os.chdir(rr_path)
 logFile = open("validation.log", "w")
 
 for category in relmon_request["categories"]:
+    print("Started " + category["name"] + " reports.")
+    # TODO: handle dirs creation failure
     os.makedirs("reports/" + category["name"])
-    print("iteration")
-    command = ["ValidationMatrix.py",
-               "-a",
-               category["name"],
-               "-o",
-               "reports/" + category["name"],
-               "--hash_name"]
+    validation_cmd = ["ValidationMatrix.py",
+                      "-a",
+                      category["name"],
+                      "-o",
+                      "reports/" + category["name"],
+                      "--hash_name"]
     if (category["HLT"]):
-        command.append("--HLT")
-    print(" ".join(command))
+        validation_cmd.append("--HLT")
+    print(" ".join(validation_cmd))
     # TODO: handle failures
-    proc = subprocess.Popen(command, stdout=logFile)
+    proc = subprocess.Popen(validation_cmd, stdout=logFile)
     proc.wait()
-    print("something schould have happened")
-    print(category["name"])
+    dir2webdir_cmd = ['dir2webdir.py', "reports/" + category["name"]]
+    logFile.write("    SUBPROCESS: " + " ".join(dir2webdir_cmd))
+    print(" ".join(dir2webdir_cmd))
+    proc = subprocess.Popen(dir2webdir_cmd)
+    proc.wait()
+    print("Finished " + category["name"] + " reports.")
