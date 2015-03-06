@@ -54,14 +54,15 @@ def get_DQMIO_status(sample_name):
     r = requests.get(DATATIER_CHECK_URL + sample_name,
                      verify=False,
                      cert=(CERTIFICATE_PATH, KEY_PATH))
+    # TODO: handle request failure
     if (r.status_code == requests.codes.ok):
         if ("DQMIO" in r.text):
             rjson = json.loads(r.text.replace('\'', '\"'))
-            return ("DQMIO", [i for i in rjson if "DQMIO" in i][0])
-        # TODO: make "waiting" check real (this is a guess)
-        if ("None" in r.text):
-            return ("waiting", None)
-    return ("NoDQMIO", None)
+            DQMIO_string = [i for i in rjson if "DQMIO" in i][0]
+            if ("None" in DQMIO_string):
+                return ("waiting", None)
+            return ("DQMIO", DQMIO_string)
+        return ("NoDQMIO", None)
 
 
 def get_ROOT_name_part(DQMIO_string):
