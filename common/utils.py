@@ -85,6 +85,7 @@ def sample_percent_by_status(relmon_request, status, ignore):
                 if (sample["status"] in status):
                     with_status += 1
                 not_ignored += 1
+    print(float(with_status) / float(not_ignored) * 100.0)
     if (not_ignored == 0):
         return 0.0
     return (float(with_status) / float(not_ignored) * 100.0)

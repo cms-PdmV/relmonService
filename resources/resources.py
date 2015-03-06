@@ -42,7 +42,7 @@ class Sample(Resource):
                     status=["downloaded"],
                     ignore=["NoDQMIO"])
                 if (
-                        relmon_request["status"] == "ROOT" and
+                        relmon_request["status"] == "downloading" and
                         perc_downloaded >= float(relmon_request["threshold"])):
                     relmon_request["status"] = "downloaded"
                 write_RR_data()

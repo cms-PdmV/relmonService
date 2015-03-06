@@ -37,11 +37,11 @@ class RelmonReportDaemon(Thread):
                             relmon_request["status"] = "downloading"
                             write_RR_data()
                     if (relmon_request["status"] == "downloading"):
-                        perc_ROOT = utils.sample_percent_by_status(
+                        perc_waiting = utils.sample_percent_by_status(
                             relmon_request,
-                            status=["ROOT"],
+                            status=["initial", "waiting"],
                             ignore=["NoDQM"])
-                        if (perc_ROOT < 100.0):
+                        if (perc_waiting > 0):
                             self.update_ROOT_statuses(relmon_request)
                     if (relmon_request["status"] == "downloaded"):
                         thread.start_new_thread(
