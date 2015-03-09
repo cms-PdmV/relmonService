@@ -19,15 +19,18 @@ class Sample(Resource):
             the_category = [i for i in relmon_request["categories"] if
                             i["name"] == category][0]
             the_list = the_category["lists"][sample_list]
-            return [i for i in the_list if i["name"] == sample_name][0]
-        except StandardError as err:
+            return [i for i in the_list if i["name"] == sample_name][0], 200
+        except IndexError as err:
             print(err)
             return "Not Found", 404
+        except Exception as ex:
+            print(ex)
+            return "Internal error", 500
 
     def put(self, request_id, category, sample_list, sample_name):
-        with RR_data_lock:
-            global RR_data
-            try:
+        try:
+            with RR_data_lock:
+                global RR_data
                 relmon_request = (
                     [i for i in RR_data if i["id"] == request_id][0])
                 the_category = [i for i in relmon_request["categories"] if
@@ -47,47 +50,55 @@ class Sample(Resource):
                     relmon_request["status"] = "downloaded"
                 write_RR_data()
                 return "OK", 200
-            except StandardError as err:
-                print(err)
-                return "Not found", 404
+        except IndexError as err:
+            print(err)
+            return "Not Found", 404
+        except Exception as ex:
+            print(ex)
+            return "Internal error", 500
 
 
 class Request(Resource):
 
     def get(self, request_id):
-        global RR_data
-        response = [i for i in RR_data if i["id"] == request_id][0]
-        if response:
-            return response
-        else:
-            return [], 404
+        try:
+            global RR_data
+            return [i for i in RR_data if i["id"] == request_id][0], 200
+        except IndexError as err:
+            print(err)
+            return "Not Found", 404
+        except Exception as ex:
+            print(ex)
+            return "Internal error", 500
 
 
 class Requests(Resource):
 
     def get(self):
-        return RR_data
+        return RR_data, 200
 
     def post(self):
-        # parser = reqparse.RequestParser()
-        # parser.add_argument("name", type=str)
-        # parser.add_argument("threshold", type=float)
-        # parser.add_argument("categories", type=list)
-        args = request.json
-        new_record = {"id": int(time.time()),
-                      "name": args["name"],
-                      "status": "initial",
-                      "threshold": args["threshold"],
-                      "categories": []}
-
-        for category in args["categories"]:
-            for list_idx, sample_list in category["lists"].iteritems():
-                for sample_idx, sample in enumerate(sample_list):
-                    tmp_sample = {"name": sample, "status": "initial"}
-                    sample_list[sample_idx] = tmp_sample
-            new_record["categories"].append(category)
-        with RR_data_lock:
-            global RR_data
-            RR_data.append(new_record)
-            write_RR_data()
-        return args
+        try:
+            args = request.json
+            new_record = {"id": int(time.time()),
+                          "name": args["name"],
+                          "status": "initial",
+                          "threshold": args["threshold"],
+                          "categories": []}
+            for category in args["categories"]:
+                for list_idx, sample_list in category["lists"].iteritems():
+                    for sample_idx, sample in enumerate(sample_list):
+                        tmp_sample = {"name": sample, "status": "initial"}
+                        sample_list[sample_idx] = tmp_sample
+                new_record["categories"].append(category)
+            with RR_data_lock:
+                global RR_data
+                RR_data.append(new_record)
+                write_RR_data()
+            return "OK", 200
+        except IndexError as err:
+            print(err)
+            return "Not Found", 404
+        except Exception as ex:
+            print(ex)
+            return "Internal error", 500
