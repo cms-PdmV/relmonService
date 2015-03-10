@@ -113,14 +113,14 @@ function Request_controller($http, $modal) {
     };
     var http_get_error = function(data, status){
         me.relmon_requests = "";
-        console.log("GET failed.");
+        me.open_error_modal("Server responded with status code: " + status + "\n" + data);
     };
     var http_post_success = function(data, status){
         console.log("Successful POST.");
         me.get_requests();
     };
     var http_post_error = function(data, status){
-        console.log("POST failed.");
+        me.open_error_modal("Server responded with status code: " + status + "\n" + data);
     };
     var http_finally = function(){
         if (http_requests_in_progress <= 0)
