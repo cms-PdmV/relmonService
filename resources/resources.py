@@ -41,13 +41,13 @@ class Sample(Resource):
                     if (sample["name"] == sample_name):
                         the_list[sidx] = request.json
                         break
-                perc_downloaded = utils.sample_percent_by_status(
+                frac_downloaded = utils.sample_fraction_by_status(
                     relmon_request,
                     status=["downloaded"],
                     ignore=["NoDQMIO"])
-                if (
-                        relmon_request["status"] == "downloading" and
-                        perc_downloaded >= float(relmon_request["threshold"])):
+                if (relmon_request["status"] == "downloading" and
+                    frac_downloaded * 100 >= relmon_request["threshold"]):
+                    # then:
                     relmon_request["status"] = "downloaded"
                 write_RR_data()
                 return "OK", 200
@@ -128,9 +128,11 @@ class Requests(Resource):
             new_record = {"id": int(time.time()),
                           "name": args["name"],
                           "status": "initial",
-                          "threshold": args["threshold"],
+                          "threshold": int(args["threshold"]),
                           "log": False,
                           "categories": []}
+            if (new_record["threshold"] < 0 or new_record["threshold"] > 100):
+                raise ValueError
             for category in args["categories"]:
                 for list_idx, sample_list in category["lists"].iteritems():
                     for sample_idx, sample in enumerate(sample_list):
@@ -142,6 +144,9 @@ class Requests(Resource):
                 RR_data.append(new_record)
                 write_RR_data()
             return "OK", 200
+        except (TypeError, ValueError) as err:
+            print(err)
+            return "Bad request", 400
         except IndexError as err:
             print(err)
             return "Not Found", 404

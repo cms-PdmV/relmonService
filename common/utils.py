@@ -2,6 +2,7 @@
 Helper functions for relmon request service.
 """
 
+import fractions
 import re
 import requests
 import json
@@ -74,7 +75,7 @@ def get_ROOT_name_part(DQMIO_string):
         return DS + "__" + CMSSW + '-' + PS + '-'
 
 
-def sample_percent_by_status(relmon_request, status, ignore):
+def sample_fraction_by_status(relmon_request, status, ignore):
     not_ignored = 0
     with_status = 0
     for category in relmon_request["categories"]:
@@ -85,10 +86,9 @@ def sample_percent_by_status(relmon_request, status, ignore):
                 if (sample["status"] in status):
                     with_status += 1
                 not_ignored += 1
-    print(float(with_status) / float(not_ignored) * 100.0)
     if (not_ignored == 0):
-        return 0.0
-    return (float(with_status) / float(not_ignored) * 100.0)
+        return fractions.Fraction(0)
+    return fractions.Fraction(with_status, not_ignored)
 
 
 # TODO: make one function instead of 2

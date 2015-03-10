@@ -3,7 +3,7 @@ Daemon checks DQMIO datatier statuses and files existence in DQM ROOT
 directory for each sample and starts downloader when enough ROOT files are
 present.
 """
-
+from fractions import Fraction
 import time
 from threading import Thread
 import thread
@@ -23,25 +23,26 @@ class RelmonReportDaemon(Thread):
                 for relmon_request in RR_data:
                     if (relmon_request["status"] in ["done", "failed"]):
                         continue
+                    frac_threshold = (
+                        Fraction(relmon_request["threshold"], 100))
                     if (relmon_request["status"] in ["initial", "DQMIO"]):
                         self.update_ROOT_statuses(relmon_request)
-                        perc_ROOT = utils.sample_percent_by_status(
+                        frac_ROOT = utils.sample_fraction_by_status(
                             relmon_request,
                             status=["ROOT"],
                             ignore=["NoDQMIO"])
-                        print(perc_ROOT)
-                        if (perc_ROOT >= float(relmon_request["threshold"])):
+                        if (frac_ROOT >= frac_threshold):
                             thread.start_new_thread(
                                 utils.launch_downloads,
                                 (relmon_request["id"],))
                             relmon_request["status"] = "downloading"
                             write_RR_data()
                     if (relmon_request["status"] == "downloading"):
-                        perc_waiting = utils.sample_percent_by_status(
+                        frac_waiting = utils.sample_fraction_by_status(
                             relmon_request,
                             status=["initial", "waiting"],
                             ignore=["NoDQMIO"])
-                        if (perc_waiting > 0):
+                        if (frac_waiting > Fraction(0)):
                             self.update_ROOT_statuses(relmon_request)
                     if (relmon_request["status"] == "downloaded"):
                         thread.start_new_thread(
@@ -51,6 +52,7 @@ class RelmonReportDaemon(Thread):
                         write_RR_data()
             print("sleep")
             time.sleep(13)
+            print("wake")
         # end of while
 
     def update_ROOT_statuses(self, relmon_request):
