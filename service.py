@@ -17,9 +17,16 @@ api.add_resource(resources.Request,
                  "/requests/<int:request_id>",
                  endpoint="request")
 api.add_resource(resources.Sample,
-                 ("/requests/<int:request_id>/categories/<string:category>/"
-                  "lists/<string:sample_list>/samples/<string:sample_name>"),
+                 "/requests/<int:request_id>/categories/<string:category>/" +
+                 "lists/<string:sample_list>/samples/<string:sample_name>",
                  endpoint="sample")
+api.add_resource(resources.RequestLog,
+                 "/requests/<int:request_id>/log",
+                 endpoint="log")
+api.add_resource(resources.RequestStatus,
+                 "/requests/<int:request_id>/status",
+                 endpoint="status")
+
 
 if __name__ == '__main__':
     main_daemon = RelmonReportDaemon()

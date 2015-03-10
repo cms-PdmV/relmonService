@@ -28,7 +28,7 @@ class RelmonReportDaemon(Thread):
                         perc_ROOT = utils.sample_percent_by_status(
                             relmon_request,
                             status=["ROOT"],
-                            ignore=["NoDQM"])
+                            ignore=["NoDQMIO"])
                         print(perc_ROOT)
                         if (perc_ROOT >= float(relmon_request["threshold"])):
                             thread.start_new_thread(
@@ -40,7 +40,7 @@ class RelmonReportDaemon(Thread):
                         perc_waiting = utils.sample_percent_by_status(
                             relmon_request,
                             status=["initial", "waiting"],
-                            ignore=["NoDQM"])
+                            ignore=["NoDQMIO"])
                         if (perc_waiting > 0):
                             self.update_ROOT_statuses(relmon_request)
                     if (relmon_request["status"] == "downloaded"):
@@ -50,7 +50,6 @@ class RelmonReportDaemon(Thread):
                         relmon_request["status"] = "comparing"
                         write_RR_data()
             print("sleep")
-            print(RR_data_lock)
             time.sleep(13)
         # end of while
 

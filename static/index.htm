@@ -89,10 +89,27 @@
                 <li class="list-group-item">
                   Status: {{request.status}}
                 </li>
+		<li class="list-group-item">
+                  Threshold: {{request.threshold}}
+                </li>
+		<li class="list-group-item">
+                  Log available: {{request.log}}
+                </li>
+		<li ng-if="request.log" class="list-group-item">
+		  <a  href="validation_logs/{{request.id}}.log">Log File</a>
+		</li>
               </ul>
             </td>
 	    <td colspan="2">
-	      {{request}}
+	      <ul class="list-group" ng-repeat="category in request.categories">
+                <li class="list-group-item" ng-repeat="list in category.lists">
+		  <ul class="list-group">
+                    <li class="list-group-item" ng-repeat="sample in list">
+                      {{sample}}
+                    </li>
+		  </ul>
+                </li>
+              </ul>
 	    </td>
           </tr>
         </tbody>

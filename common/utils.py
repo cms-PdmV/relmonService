@@ -115,9 +115,9 @@ def launch_validation_matrix(request_id):
     ssh.connect("cmsdev04.cern.ch",
                 username=credentials["user"],
                 password=credentials["pass"])
-    cmd = ("cd /build/jdaugala/CMSSW_7_4_0_pre6\n eval `scramv1 runtime -sh`\n" +
-           "cd " +
-           REMOTE_WORK_DIR +
+    cmd = ("cd /build/jdaugala/CMSSW_7_4_0_pre8\n" +
+           " eval `scramv1 runtime -sh`\n" +
+           "cd " + REMOTE_WORK_DIR +
            "\n nohup ./compare.py " +
            str(request_id))
     (stdin, stdout, stderr) = ssh.exec_command(cmd)

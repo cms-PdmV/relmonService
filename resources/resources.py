@@ -7,7 +7,8 @@ from common.relmon_request_data import RR_data, RR_data_lock, write_RR_data
 import time
 from flask import request
 from common import utils
-import sys
+
+# TODO: eliminate code duplication
 
 
 class Sample(Resource):
@@ -58,6 +59,50 @@ class Sample(Resource):
             return "Internal error", 500
 
 
+class RequestStatus(Resource):
+
+    def put(self, request_id):
+        try:
+            with RR_data_lock:
+                global RR_data
+                relmon_request = (
+                    [i for i in RR_data if i["id"] == request_id][0])
+                # TODO: check new_status for validity
+                new_status = request.json["value"]
+                relmon_request["status"] = new_status
+                write_RR_data()
+                return "OK", 200
+        except IndexError as err:
+            print(err)
+            return "Not Found", 404
+        except Exception as ex:
+            print(ex)
+            return "Internal error", 500
+
+
+class RequestLog(Resource):
+
+    def put(self, request_id):
+        try:
+            with RR_data_lock:
+                global RR_data
+                relmon_request = (
+                    [i for i in RR_data if i["id"] == request_id][0])
+                # TODO: check new_status for validity
+                print(relmon_request["log"])
+                new_log_state = request.json["value"]
+                relmon_request["log"] = new_log_state
+                print(relmon_request["log"])
+                write_RR_data()
+                return "OK", 200
+        except IndexError as err:
+            print(err)
+            return "Not Found", 404
+        except Exception as ex:
+            print(ex)
+            return "Internal error", 500
+
+
 class Request(Resource):
 
     def get(self, request_id):
@@ -84,6 +129,7 @@ class Requests(Resource):
                           "name": args["name"],
                           "status": "initial",
                           "threshold": args["threshold"],
+                          "log": False,
                           "categories": []}
             for category in args["categories"]:
                 for list_idx, sample_list in category["lists"].iteritems():
