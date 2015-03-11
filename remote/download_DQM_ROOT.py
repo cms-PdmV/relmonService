@@ -36,6 +36,9 @@ for category in relmon_request["categories"]:
         if (not sample_list):
             continue
         print(sample_list)
+        # NOTE: ref and target samples in the same
+        # directory for automatic pairing
+        #
         # if (not os.path.exists(lname)):
         #     os.makedirs(lname, 0770)
         # os.chdir(lname)
@@ -89,6 +92,7 @@ for category in relmon_request["categories"]:
                 )
                 print(r.status_code)
                 # ^
+        # NOTE: same dir for ref and target
         # os.chdir("..")
     os.chdir("..")
 os.umask(original_umask)

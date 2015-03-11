@@ -84,9 +84,11 @@ class RelmonReportDaemon(Thread):
                 file_urls = utils.get_ROOT_file_urls(
                     sample_list[0]["name"],
                     category["name"])
-                # TODO: handle failures
                 if (not file_urls):
-                    print("sikna")
+                    # TODO: maybe different decision here?
+                    sample_list[0]["status"] = "failed"
+                    relmon_request["status"] = "failed"
+                    # clean up
                     return
                 for sample_idx, sample in enumerate(sample_list):
                     if (sample["status"] != "DQMIO"):

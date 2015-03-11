@@ -9,6 +9,7 @@ import httplib
 import subprocess
 import shutil
 
+# TODO: move hardcoded values to config file
 CERTIFICATE_PATH = "/afs/cern.ch/user/j/jdaugala/.globus/usercert.pem"
 KEY_PATH = "/afs/cern.ch/user/j/jdaugala/.globus/userkey.pem"
 LOG_DIR_AT_SERVICE = (
@@ -16,6 +17,8 @@ LOG_DIR_AT_SERVICE = (
 SERVICE_IP = "188.184.185.27"
 CREDENTIALS_PATH = "/afs/cern.ch/user/j/jdaugala/private/credentials"
 USER = "jdaugala"
+RELMON_PATH = (
+    "/afs/cern.ch/cms/offline/dqm/ReleaseMonitoring-TEST/jdaugalaSandbox/")
 
 credentials = {}
 with open(CREDENTIALS_PATH) as cred_file:
@@ -88,7 +91,9 @@ def finalize_report_generation(status):
     logFile.close()
     upload_log()
     put_status(status)
-    exit()
+
+
+report_path = RELMON_PATH + relmon_request["name"] + '/'
 
 
 for category in relmon_request["categories"]:
@@ -113,6 +118,7 @@ for category in relmon_request["categories"]:
     v_proc_return = v_proc.wait()
     if (v_proc_return != 0):
         finalize_report_generation("failed")
+        exit()
     dir2webdir_cmd = ['dir2webdir.py', "reports/" + category["name"]]
     logFile.write("!       SUBPROCESS:" + " ".join(dir2webdir_cmd) + "\n")
     logFile.flush()
@@ -120,4 +126,9 @@ for category in relmon_request["categories"]:
     d2w_proc_return = d2w_proc.wait()
     if (d2w_proc_return != 0):
         finalize_report_generation("failed")
-    finalize_report_generation("finished")
+        exit()
+    # TODO: handle failures
+    shutil.copytree("reports/" + category["name"],
+                    report_path + category["name"])
+finalize_report_generation("finished")
+# TODO: cleanup

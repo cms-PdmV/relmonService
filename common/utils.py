@@ -64,6 +64,7 @@ def get_DQMIO_status(sample_name):
                 return ("waiting", None)
             return ("DQMIO", DQMIO_string)
         return ("NoDQMIO", None)
+    return ("waiting", None)
 
 
 def get_ROOT_name_part(DQMIO_string):
