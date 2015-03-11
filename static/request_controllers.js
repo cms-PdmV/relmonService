@@ -140,6 +140,35 @@ function Request_controller($http, $modal) {
         reset_sample_inputs();
     }
     // public methods
+
+    this.sample_count_by_status = function(samples, status) {
+        count = 0
+        for(i = 0; i < samples.length; i++){
+            if (samples[i].status == status){
+                count++;
+            }
+        }
+        return count;
+    };
+    
+    this.get_badge_class_by_status = function(status) {
+        switch (status) {
+        case "NoDQMIO":
+            return "badge-warning";
+            // breaks not reachable
+        case "DQMIO":
+            return "badge-info";
+        case "failed":
+            return "badge-danger";
+        case "downloaded":
+            return "badge-success";
+        case "ROOT":
+            return "badge-info";
+        default:
+            return "";
+        }
+    };
+    
     this.get_requests = function() {
         http_request_prepare();
         $http.get("http://188.184.185.27/requests")

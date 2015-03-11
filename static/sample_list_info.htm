@@ -1,0 +1,5 @@
+total:      <b>{{the_list.length}}</b>,
+downloaded: <b>{{request_controller.sample_count_by_status(the_list, "downloaded")}}</b>,
+ROOT:       <b>{{request_controller.sample_count_by_status(the_list, "ROOT")}}</b>,
+noDQMIO:    <b>{{request_controller.sample_count_by_status(the_list, "NoDQMIO")}}</b>,
+failed:     <b>{{request_controller.sample_count_by_status(the_list, "failed")}}</b>

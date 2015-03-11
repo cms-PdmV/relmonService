@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Bootstrap CSS -->
     <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="custom_styles.css" rel="stylesheet">
     <!-- Angularjs ... -->
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.11/angular.min.js"></script>
     <!-- Angular ui Bootstrap -->
@@ -68,12 +70,11 @@
       <h1>Latest requests</h1>
 
 <!-- TODO: make table beautiful -->
-      <table class="table table-striped table-bordered table-hover">
+      <table class="table table-striped table-bordered table-hover row">
         <thead>
           <tr>
-            <th>Info</th>
-            <th>References</th>
-            <th>Compares</th>
+            <th class="col-sm-3">Workflow</th>
+            <th class="col-sm-9">Samples</th>
           </tr>
         </thead>
         <tbody>
@@ -84,32 +85,44 @@
                   Id: {{request.id}}
                 </li>
                 <li class="list-group-item">
-                  Name: {{request.name}}
+                  Name:</br>{{request.name}}
                 </li>
                 <li class="list-group-item">
-                  Status: {{request.status}}
+                  Status: 
+                  <span ng-class="request.status=='failed' ? 'text-danger' : 'text-info'">
+                    <b>{{request.status}}</b>
+                  </span>
                 </li>
 		<li class="list-group-item">
                   Threshold: {{request.threshold}}
                 </li>
-		<li class="list-group-item">
-                  Log available: {{request.log}}
-                </li>
 		<li ng-if="request.log" class="list-group-item">
-		  <a  href="validation_logs/{{request.id}}.log">Log File</a>
+		  <a  href="validation_logs/{{request.id}}.log">Log file</a>
 		</li>
               </ul>
             </td>
-	    <td colspan="2">
-	      <ul class="list-group" ng-repeat="category in request.categories">
-                <li class="list-group-item" ng-repeat="list in category.lists">
-		  <ul class="list-group">
-                    <li class="list-group-item" ng-repeat="sample in list">
-                      {{sample}}
-                    </li>
-		  </ul>
-                </li>
-              </ul>
+	    <td>
+              <accordion close-others="false">
+	        <accordion-group ng-repeat="category in request.categories" ng-if="category.lists.target.length > 0">
+                  <accordion-heading>
+                    <b>{{category.name}}</b>
+                    (<span ng-init="the_list=category.lists.reference.concat(category.lists.target)"
+                           ng-include="'sample_list_info.htm'"></span>)
+                  </accordion-heading>
+                  <accordion-group ng-repeat="(list_name, sample_list) in category.lists">
+                    <accordion-heading>
+                      <b>{{list_name}}</b>
+                      (<span ng-init="the_list=sample_list" ng-include="'sample_list_info.htm'"></span>)
+                    </accordion-heading>  
+		    <ul class="list-group">
+                      <li class="list-group-item compact" ng-repeat="sample in sample_list">
+                        {{sample.name}}
+                        <span class="badge" ng-class="request_controller.get_badge_class_by_status(sample.status)">{{sample.status}}</span>
+                      </li>
+		    </ul>
+                  </accordion-group>
+                </accordion-group>
+              </accordion>
 	    </td>
           </tr>
         </tbody>
