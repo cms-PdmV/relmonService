@@ -33,7 +33,7 @@ os.chdir(rr_path)
 for category in relmon_request["categories"]:
     if (not os.path.exists(category["name"])):
         os.makedirs(category["name"], 0770)
-        os.chdir(category["name"])
+    os.chdir(category["name"])
     for lname, sample_list in category["lists"].iteritems():
         if (not sample_list):
             continue
