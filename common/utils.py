@@ -7,6 +7,7 @@ import re
 import requests
 import json
 import paramiko
+import threading
 
 DQM_ROOT_URL = "https://cmsweb.cern.ch/dqm/relval/data/browse/ROOT/"
 HYPERLINK_REGEX = re.compile(r"href=['\"]([-./\w]*)['\"]")
@@ -16,7 +17,6 @@ CMSWEB_URL = "https://cmsweb.cern.ch"
 DATATIER_CHECK_URL =\
     "https://cmsweb.cern.ch/reqmgr/reqMgr/outputDatasetsByRequestName/"
 CREDENTIALS_PATH = "/afs/cern.ch/user/j/jdaugala/private/credentials"
-REMOTE_WORK_DIR = "/build/jdaugala/relmon"
 
 credentials = {}
 with open(CREDENTIALS_PATH) as cred_file:
@@ -92,36 +92,20 @@ def sample_fraction_by_status(relmon_request, status, ignore):
     return fractions.Fraction(with_status, not_ignored)
 
 
-# TODO: make one function instead of 2
-# (launch_downloads, launch_validation_matrix)
-def launch_downloads(request_id):
-    ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect("cmsdev04.cern.ch",
-                username=credentials["user"],
-                password=credentials["pass"])
-    cmd = ("cd " +
-           REMOTE_WORK_DIR +
-           "; nohup ./download_DQM_ROOT.py " +
-           str(request_id))
-    (stdin, stdout, stderr) = ssh.exec_command(cmd)
-    print (stdout.readlines())
-    print (stderr.readlines())
-    ssh.close()
+class SSHThread(threading.Thread):
+    def __init__(self, command):
+        threading.Thread.__init__(self)
+        self.command = command
 
-
-def launch_validation_matrix(request_id):
-    ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect("cmsdev04.cern.ch",
-                username=credentials["user"],
-                password=credentials["pass"])
-    cmd = ("cd /build/jdaugala/CMSSW_7_4_0_pre8\n" +
-           " eval `scramv1 runtime -sh`\n" +
-           "cd " + REMOTE_WORK_DIR +
-           "\n nohup ./compare.py " +
-           str(request_id))
-    (stdin, stdout, stderr) = ssh.exec_command(cmd)
-    print (stdout.readlines())
-    print (stderr.readlines())
-    ssh.close()
+    def run(self):
+        print("SSHThread")
+        print(self.command)
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect("cmsdev04.cern.ch",
+                    username=credentials["user"],
+                    password=credentials["pass"])
+        (stdin, stdout, stderr) = ssh.exec_command(self.command)
+        print (stdout.readlines())
+        print (stderr.readlines())
+        ssh.close()

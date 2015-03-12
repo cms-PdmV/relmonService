@@ -6,15 +6,22 @@ present.
 from fractions import Fraction
 import time
 from threading import Thread
-import thread
 from common import utils
 from common.relmon_request_data import RR_data, RR_data_lock, write_RR_data
+REMOTE_WORK_DIR = "/build/jdaugala/relmon"
+DOWNLOADER_CMD = "cd " + REMOTE_WORK_DIR + "; ./download_DQM_ROOT.py "
+REPORT_GENERATOR_CMD = ("cd /build/jdaugala/CMSSW_7_4_0_pre8\n" +
+                        " eval `scramv1 runtime -sh`\n" +
+                        "cd " + REMOTE_WORK_DIR +
+                        "\n ./compare.py ")
 
 
 class RelmonReportDaemon(Thread):
     def __init__(self):
         Thread.__init__(self)
         self.setDaemon(True)
+        self.downloaders = {}
+        self.report_generators = {}
 
     def run(self):
         while True:
@@ -23,31 +30,41 @@ class RelmonReportDaemon(Thread):
                 for relmon_request in RR_data:
                     if (relmon_request["status"] in ["done", "failed"]):
                         continue
+                    rid = relmon_request["id"]
                     frac_threshold = (
                         Fraction(relmon_request["threshold"], 100))
                     if (relmon_request["status"] in ["initial", "DQMIO"]):
+                        # update "ROOT" statuses and start downloading if
+                        # there are enough samples with "ROOT" status
                         self.update_ROOT_statuses(relmon_request)
                         frac_ROOT = utils.sample_fraction_by_status(
-                            relmon_request,
-                            status=["ROOT"],
-                            ignore=["NoDQMIO"])
+                            relmon_request, ["ROOT"], ["NoDQMIO"])
+                        print(frac_ROOT)
+                        print(frac_threshold)
                         if (frac_ROOT >= frac_threshold):
-                            thread.start_new_thread(
-                                utils.launch_downloads,
-                                (relmon_request["id"],))
+                            print("start donloader")
+                            self.start_downloader(rid)
                             relmon_request["status"] = "downloading"
                             write_RR_data()
                     if (relmon_request["status"] == "downloading"):
+                        # update "ROOT" statuses if "waiting" or "initial"
+                        # samples exist; also, start downloading again if
+                        # previuos downloader finished but there exist
+                        # "ROOT" samples
                         frac_waiting = utils.sample_fraction_by_status(
                             relmon_request,
                             status=["initial", "waiting"],
                             ignore=["NoDQMIO"])
                         if (frac_waiting > Fraction(0)):
                             self.update_ROOT_statuses(relmon_request)
+                        if (not self.downloaders[rid].isAlive()):
+                            frac_ROOT = utils.sample_fraction_by_status(
+                                relmon_request, ["ROOT"], ["NoDQMIO"])
+                            if (frac_ROOT > Fraction(0)):
+                                self.start_downloader(rid)
+                    # TODO: start report generation not in this daemon
                     if (relmon_request["status"] == "downloaded"):
-                        thread.start_new_thread(
-                            utils.launch_validation_matrix,
-                            (relmon_request["id"],))
+                        self.start_report_generator(rid)
                         relmon_request["status"] = "comparing"
                         write_RR_data()
             print("sleep")
@@ -85,7 +102,7 @@ class RelmonReportDaemon(Thread):
                     sample_list[0]["name"],
                     category["name"])
                 if (not file_urls):
-                    # TODO: maybe different decision here?
+                    # FIXME: temporary decision
                     sample_list[0]["status"] = "failed"
                     relmon_request["status"] = "failed"
                     # clean up
@@ -97,3 +114,25 @@ class RelmonReportDaemon(Thread):
                            s for s in file_urls):
                         sample["status"] = "ROOT"
         write_RR_data()
+
+    def start_downloader(self, request_id):
+        if (request_id in self.downloaders and
+            self.downloaders[request_id].isAlive()):
+            # then
+            return None
+        downloader = utils.SSHThread(
+            DOWNLOADER_CMD + str(request_id))
+        self.downloaders[request_id] = downloader
+        downloader.start()
+        return downloader
+
+    def start_report_generator(self, request_id):
+        if (request_id in self.report_generators and
+            self.report_generators[request_id].isAlive()):
+            # then
+            return None
+        reporter = utils.SSHThread(
+            REPORT_GENERATOR_CMD + str(request_id))
+        self.report_generators[request_id] = reporter
+        reporter.start()
+        return reporter
