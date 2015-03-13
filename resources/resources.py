@@ -3,20 +3,20 @@ Restful flask resources for relmon request service.
 """
 
 from flask.ext.restful import Resource
-from common.relmon_request_data import RR_data, RR_data_lock, write_RR_data
 import time
 from flask import request
-from common import utils
+from common import utils, relmon_shared
 
 # TODO: eliminate code duplication
+# # try, except, return
 
 
 class Sample(Resource):
 
     def get(self, request_id, category, sample_list, sample_name):
-        global RR_data
         try:
-            relmon_request = [i for i in RR_data if i["id"] == request_id][0]
+            relmon_request = [i for i in relmon_shared.data if
+                              i["id"] == request_id][0]
             the_category = [i for i in relmon_request["categories"] if
                             i["name"] == category][0]
             the_list = the_category["lists"][sample_list]
@@ -30,10 +30,10 @@ class Sample(Resource):
 
     def put(self, request_id, category, sample_list, sample_name):
         try:
-            with RR_data_lock:
-                global RR_data
-                relmon_request = (
-                    [i for i in RR_data if i["id"] == request_id][0])
+            with relmon_shared.data_lock:
+
+                relmon_request = [i for i in relmon_shared.data if
+                                  i["id"] == request_id][0]
                 the_category = [i for i in relmon_request["categories"] if
                                 i["name"] == category][0]
                 the_list = the_category["lists"][sample_list]
@@ -49,7 +49,7 @@ class Sample(Resource):
                     frac_downloaded * 100 >= relmon_request["threshold"]):
                     # then:
                     relmon_request["status"] = "downloaded"
-                write_RR_data()
+                relmon_shared.write_data()
                 return "OK", 200
         except IndexError as err:
             print(err)
@@ -63,14 +63,13 @@ class RequestStatus(Resource):
 
     def put(self, request_id):
         try:
-            with RR_data_lock:
-                global RR_data
-                relmon_request = (
-                    [i for i in RR_data if i["id"] == request_id][0])
+            with relmon_shared.data_lock:
+                relmon_request = [i for i in relmon_shared.data if
+                                  i["id"] == request_id][0]
                 # TODO: check new_status for validity
                 new_status = request.json["value"]
                 relmon_request["status"] = new_status
-                write_RR_data()
+                relmon_shared.write_data()
                 return "OK", 200
         except IndexError as err:
             print(err)
@@ -84,16 +83,15 @@ class RequestLog(Resource):
 
     def put(self, request_id):
         try:
-            with RR_data_lock:
-                global RR_data
-                relmon_request = (
-                    [i for i in RR_data if i["id"] == request_id][0])
+            with relmon_shared.data_lock:
+                relmon_request = [i for i in relmon_shared.data if
+                                  i["id"] == request_id][0]
                 # TODO: check new_status for validity
                 print(relmon_request["log"])
                 new_log_state = request.json["value"]
                 relmon_request["log"] = new_log_state
                 print(relmon_request["log"])
-                write_RR_data()
+                relmon_shared.write_data()
                 return "OK", 200
         except IndexError as err:
             print(err)
@@ -107,8 +105,8 @@ class Request(Resource):
 
     def get(self, request_id):
         try:
-            global RR_data
-            return [i for i in RR_data if i["id"] == request_id][0], 200
+            return [i for i in relmon_shared.data if
+                    i["id"] == request_id][0], 200
         except IndexError as err:
             print(err)
             return "Not Found", 404
@@ -120,7 +118,7 @@ class Request(Resource):
 class Requests(Resource):
 
     def get(self):
-        return RR_data, 200
+        return relmon_shared.data, 200
 
     def post(self):
         try:
@@ -139,10 +137,9 @@ class Requests(Resource):
                         tmp_sample = {"name": sample, "status": "initial"}
                         sample_list[sample_idx] = tmp_sample
                 new_record["categories"].append(category)
-            with RR_data_lock:
-                global RR_data
-                RR_data.append(new_record)
-                write_RR_data()
+            with relmon_shared.data_lock:
+                relmon_shared.data.append(new_record)
+                relmon_shared.write_data()
             return "OK", 200
         except (TypeError, ValueError) as err:
             print(err)

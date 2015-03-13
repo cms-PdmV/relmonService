@@ -8,7 +8,9 @@ import requests
 import json
 import paramiko
 import threading
+import relmon_shared
 
+# TODO: move hardcoded values to config file
 DQM_ROOT_URL = "https://cmsweb.cern.ch/dqm/relval/data/browse/ROOT/"
 HYPERLINK_REGEX = re.compile(r"href=['\"]([-./\w]*)['\"]")
 CERTIFICATE_PATH = "/afs/cern.ch/user/j/jdaugala/.globus/usercert.pem"
@@ -17,6 +19,12 @@ CMSWEB_URL = "https://cmsweb.cern.ch"
 DATATIER_CHECK_URL =\
     "https://cmsweb.cern.ch/reqmgr/reqMgr/outputDatasetsByRequestName/"
 CREDENTIALS_PATH = "/afs/cern.ch/user/j/jdaugala/private/credentials"
+REMOTE_WORK_DIR = "/build/jdaugala/relmon"
+DOWNLOADER_CMD = "cd " + REMOTE_WORK_DIR + "; ./download_DQM_ROOT.py "
+REPORT_GENERATOR_CMD = ("cd /build/jdaugala/CMSSW_7_4_0_pre8\n" +
+                        " eval `scramv1 runtime -sh`\n" +
+                        "cd " + REMOTE_WORK_DIR +
+                        "\n ./compare.py ")
 
 credentials = {}
 with open(CREDENTIALS_PATH) as cred_file:
@@ -109,3 +117,38 @@ class SSHThread(threading.Thread):
         print (stdout.readlines())
         print (stderr.readlines())
         ssh.close()
+
+
+def is_downloader_alive(request_id):
+    return (request_id in relmon_shared.downloaders and
+            relmon_shared.downloaders[request_id].isAlive())
+
+
+def is_reporter_alive(request_id):
+    return (request_id in relmon_shared.reporters and
+            relmon_shared.reporters[request_id].isAlive())
+
+
+def is_terminator_alive(request_id):
+    return (request_id in relmon_shared.terminators and
+            relmon_shared.terminators[request_id].isAlive())
+
+
+def start_downloader(request_id):
+    if (is_downloader_alive(request_id)):
+        return None
+    downloader = SSHThread(
+        DOWNLOADER_CMD + str(request_id))
+    relmon_shared.downloaders[request_id] = downloader
+    downloader.start()
+    return downloader
+
+
+def start_reporter(request_id):
+    if (is_reporter_alive(request_id)):
+        return None
+    reporter = SSHThread(
+        REPORT_GENERATOR_CMD + str(request_id))
+    relmon_shared.reporters[request_id] = reporter
+    reporter.start()
+    return reporter
