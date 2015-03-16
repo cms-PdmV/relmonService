@@ -1,13 +1,15 @@
 """
-Global relmon request service data variable
+Global relmon request service variables
 """
 import os
-from threading import RLock
+import threading
 import json
+import Queue
 
 DATA_FILE_NAME = "data"
 data = []
-data_lock = RLock()
+data_lock = threading.RLock()
+high_priority_q = Queue.Queue()
 reporters = {}
 downloaders = {}
 terminators = {}

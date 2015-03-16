@@ -26,7 +26,8 @@ api.add_resource(resources.RequestLog,
 api.add_resource(resources.RequestStatus,
                  "/requests/<int:request_id>/status",
                  endpoint="status")
-
+api.add_resource(resources.Terminator, "/requests/<int:request_id>/terminate",
+                 endpoint="terminator")
 
 if __name__ == '__main__':
     main_daemon = RelmonReportDaemon()

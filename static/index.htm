@@ -11,7 +11,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.11/angular.min.js"></script>
     <!-- Angular ui Bootstrap -->
     <script src="//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.12.0.js"></script>
-    
+
     <script src="request_controllers.js"></script>
   </head>
   <body>
@@ -22,45 +22,39 @@
        id="main"
        class="container"
        ng-controller="Request_controller as request_controller">
-      
+
 <!-- BEGIN new RelMon request part -->
       <h1>New RelMon request (workflow)</h1>
-      
+
       <form name="requests_form" ng-submit="request_controller.try_submit()">
         <tabset>
           <tab ng-repeat="category in request_controller.sample_inputs"
-	       heading="{{category.name}}">
+               heading="{{category.name}}">
             <div ng-repeat="list in category.lists">
               <ng-form name="inner_form">
                 <h2>{{list.name}}</h2>
                 <textarea name="text" rows="6" cols"60" class="form-control"
                           ng-model="list.data"
-                          ng-pattern="/^[-a-zA-Z0-9_ \t\r\n]+$/">
-                </textarea>
+                          ng-pattern="/^[-a-zA-Z0-9_ \t\r\n]+$/"></textarea>
                 <div class="text-danger text-center lead"
                      ng-show="inner_form.text.$error.pattern">
-                  Only letters, numbers, underscores and whitespace allowed.
-                </div>
+                  Only letters, numbers, underscores and whitespace allowed.</div>
               </ng-form>
             </div>
-	    <label ng-if="category.name != 'Generator'" class="checkbox">
-	      <input type="checkbox" ng-model="category.HLT">
-	      HLT
-	    </label>
+            <label ng-if="category.name != 'Generator'" class="checkbox">
+              <input type="checkbox" ng-model="category.HLT"></input>HLT</label>
           </tab>
         </tabset>
         <hr />
-        <label class="text">
-	  Name:
+        <label class="text">Name:
           <input type="text"
-		 id="name_field"
-		 ng-model="request_controller.new_request_name"/>
+                 id="name_field"
+                 ng-model="request_controller.new_request_name" />
 	</label>
-        <label >
-	  Threshold:
-          <input type="text" ng-model="request_controller.new_request_threshold"/>
+        <label>Threshold:
+          <input type="text" ng-model="request_controller.new_request_threshold" />
 	</label>
-        <input type="submit" class="btn btn-primary"></input>
+        <input type="submit" class="btn btn-primary" />
       </form>
 <!-- END New RelMon request part -->
 
@@ -81,56 +75,62 @@
           <tr ng-repeat="request in request_controller.relmon_requests">
             <td>
               <ul class="list-group">
-                <li class="list-group-item">
-                  Id: {{request.id}}
-                </li>
-                <li class="list-group-item">
-                  Name:</br>{{request.name}}
-                </li>
-                <li class="list-group-item">
-                  Status: 
+                <li class="list-group-item">Id: {{request.id}}</li>
+                <li class="list-group-item">Name:</br>{{request.name}}</li>
+                <li class="list-group-item">Status: 
                   <span ng-class="request.status=='failed' ? 'text-danger' : 'text-info'">
                     <b>{{request.status}}</b>
                   </span>
                 </li>
-		<li class="list-group-item">
-                  Threshold: {{request.threshold}}
+                <li class="list-group-item">Threshold: {{request.threshold}}</li>
+                <li ng-if="request.log" class="list-group-item">
+                  <a  href="validation_logs/{{request.id}}.log">Log file</a>
                 </li>
-		<li ng-if="request.log" class="list-group-item">
-		  <a  href="validation_logs/{{request.id}}.log">Log file</a>
-		</li>
+                <li class="list-group-item">
+                  <button ng-if="!request_controller.posting_terminator[request.id]"
+                          class="btn btn-danger btn-xs"
+                          ng-class="request.status=='terminating' ? 'disabled' : ''"
+                          ng-click="request_controller.post_terminate(request)">
+                    Terminate
+                  </button>
+                  <progressbar ng-if="request_controller.posting_terminator[request.id]"
+                               class="progress-striped active"
+                               max="1" value="1"
+                               type="danger">
+                    Creating terminator...
+                  </progressbar>
+                </li>
               </ul>
             </td>
-	    <td>
+            <td>
               <accordion close-others="false">
-	        <accordion-group ng-repeat="category in request.categories" ng-if="category.lists.target.length > 0">
-                  <accordion-heading>
-                    <b>{{category.name}}</b>
+                <accordion-group ng-repeat="category in request.categories"
+                                 ng-if="category.lists.target.length > 0">
+                  <accordion-heading><b>{{category.name}}</b>
                     (<span ng-init="the_list=category.lists.reference.concat(category.lists.target)"
                            ng-include="'sample_list_info.htm'"></span>)
                   </accordion-heading>
                   <accordion-group ng-repeat="(list_name, sample_list) in category.lists">
-                    <accordion-heading>
-                      <b>{{list_name}}</b>
+                    <accordion-heading><b>{{list_name}}</b>
                       (<span ng-init="the_list=sample_list" ng-include="'sample_list_info.htm'"></span>)
-                    </accordion-heading>  
-		    <ul class="list-group">
+                    </accordion-heading>
+                    <ul class="list-group">
                       <li class="list-group-item compact" ng-repeat="sample in sample_list">
                         {{sample.name}}
-                        <span class="badge" ng-class="request_controller.get_badge_class_by_status(sample.status)">{{sample.status}}</span>
+                        <span class="badge"
+                              ng-class="request_controller.get_badge_class_by_status(sample.status)">
+                          {{sample.status}}</span>
                       </li>
-		    </ul>
+                    </ul>
                   </accordion-group>
                 </accordion-group>
               </accordion>
-	    </td>
+            </td>
           </tr>
         </tbody>
       </table>
 <!-- END Latest requests part -->
-      
     </div>
 <!-- END main -->
-    
   </body>
 </html>

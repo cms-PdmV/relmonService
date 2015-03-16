@@ -1,4 +1,4 @@
-/*  
+/*
  * angular js controllers for relmon request service frontend.
  */
 var relmon_request_service_frontend = angular.module(
@@ -16,12 +16,13 @@ function Request_controller_exception(message) {
 }
 
 function Request_controller($http, $modal) {
-    
+
 // public properties
     this.sample_inputs = [];
     this.new_request_name = "";
     this.new_request_threshold = 100;
     this.relmon_requests = [];
+    this.posting_terminator = {};
 
 // private variables
     var http_requests_in_progress = 0;
@@ -61,7 +62,7 @@ function Request_controller($http, $modal) {
     /*
      * 
      */
-    function prepare_post_data() {
+    function prepare_new_request_post_data() {
         var all_sample_lists_empty = true;
         // var exist_nonmatching_lists --
         // becomes true if in some category there is a non empty target list and
@@ -73,7 +74,7 @@ function Request_controller($http, $modal) {
         post_data["categories"] = [];
         for (var i = 0; i < me.sample_inputs.length; i++){
             var category = me.sample_inputs[i];
-            // ↓ clone category from input to category_for_postasdf
+            // ↓ clone category from input to category_for_post
             var category_for_post = JSON.parse(JSON.stringify(category));
             // ↓ split by whitespace and remove empty strigs
             var ref_samples = category.lists.reference
@@ -130,7 +131,6 @@ function Request_controller($http, $modal) {
     };
 
     function submit_request(post_data) {
-        console.log("SUBMITTING");
         http_request_prepare();
         $http.post("http://188.184.185.27/requests",
                    post_data)
@@ -150,7 +150,7 @@ function Request_controller($http, $modal) {
         }
         return count;
     };
-    
+
     this.get_badge_class_by_status = function(status) {
         switch (status) {
         case "NoDQMIO":
@@ -168,7 +168,7 @@ function Request_controller($http, $modal) {
             return "";
         }
     };
-    
+
     this.get_requests = function() {
         http_request_prepare();
         $http.get("http://188.184.185.27/requests")
@@ -179,7 +179,7 @@ function Request_controller($http, $modal) {
 
     this.try_submit = function() {
         try {
-            post_data = prepare_post_data();
+            post_data = prepare_new_request_post_data();
             // TODO: format post_data text
             var modal_inst = this.open_confirm_modal(post_data);
             modal_inst.result.then(
@@ -193,6 +193,25 @@ function Request_controller($http, $modal) {
             }
         }
     };
+
+    this.post_terminate = function(relmon_request) {
+        var modal_inst = this.open_confirm_modal(
+            "Campaign " + relmon_request["name"] +
+            " is going to be terminated.\nDo you want to proceed?")
+        modal_inst.result.then(
+            function() {
+                http_request_prepare();
+                me.posting_terminator[relmon_request["id"]] = true;
+                $http.post("http://188.184.185.27/requests/" + relmon_request["id"] + "/terminate")
+                    .success(http_post_success)
+                    .error(http_post_error)
+                    .finally(function(){
+                        me.posting_terminator[relmon_request["id"]] = false;
+                        me.http_finally();
+                    });
+            }
+        );
+    }
 
     this.open_confirm_modal = function(message) {
         var modal_inst = $modal.open( {
@@ -219,7 +238,7 @@ function Request_controller($http, $modal) {
         });
         return modal_inst;
     };
-    
+
 // init stuff
     reset_sample_inputs();
     this.get_requests();

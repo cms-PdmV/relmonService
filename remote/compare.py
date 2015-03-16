@@ -49,7 +49,7 @@ os.chmod(str(relmon_request["id"]) + ".log", 0664)
 def upload_log():
     global logFile, relmon_request
     scp_proc = subprocess.Popen(
-        ["scp",
+        ["scp", "-p",
          logFile.name,
          USER + "@" + SERVICE_IP + ":" + LOG_DIR_AT_SERVICE])
     scp_proc_return = scp_proc.wait()
