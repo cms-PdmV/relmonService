@@ -67,10 +67,11 @@ class RequestStatus(Resource):
             relmon_request = [i for i in relmon_shared.data if
                               i["id"] == request_id][0]
             # TODO: check new_status for validity
-            new_status = request.json["value"]
-            relmon_request["status"] = new_status
-            relmon_shared.write_data()
-            return "OK", 200
+            if (relmon_request["status"] not in ["terminating", "finished"]):
+                new_status = request.json["value"]
+                relmon_request["status"] = new_status
+                relmon_shared.write_data()
+                return "OK", 200
 
 
 class RequestLog(Resource):

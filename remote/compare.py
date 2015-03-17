@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 """
-
+Script launches RelMon report production,
+       executes report compression and
+       moves report files to afs
 """
 import json
 import os
@@ -8,36 +10,40 @@ import argparse
 import httplib
 import subprocess
 import shutil
+from common import utils
+
 
 # TODO: move hardcoded values to config file
 CERTIFICATE_PATH = "/afs/cern.ch/user/j/jdaugala/.globus/usercert.pem"
 KEY_PATH = "/afs/cern.ch/user/j/jdaugala/.globus/userkey.pem"
 LOG_DIR_AT_SERVICE = (
     "/home/relmon/relmon_request_service/static/validation_logs/")
-SERVICE_IP = "188.184.185.27"
+SERVICE_HOST = "188.184.185.27"
 CREDENTIALS_PATH = "/afs/cern.ch/user/j/jdaugala/private/credentials"
 USER = "jdaugala"
 RELMON_PATH = (
     "/afs/cern.ch/cms/offline/dqm/ReleaseMonitoring-TEST/jdaugalaSandbox/")
 
+# read credentials
 credentials = {}
 with open(CREDENTIALS_PATH) as cred_file:
     credentials = json.load(cred_file)
 
+# parse args
 parser = argparse.ArgumentParser()
 parser.add_argument(dest="id", help="FIXME: id help")
 # TODO: other arguments
 args = parser.parse_args()
-# TODO: function for GET
-conn = httplib.HTTPConnection(SERVICE_IP, 80)
-conn.connect()
-conn.request('GET', "/requests/" + args.id)
-response = conn.getresponse()
-if (response.status != httplib.OK):
+
+# get RelMon
+status, data = utils.httpget(SERVICE_HOST,
+                             "/requests/" + args.id)
+if (status != httplib.OK):
     # FIXME: solve this problem
     exit()
-relmon_request = json.loads(response.read())
-conn.close()
+relmon_request = json.loads(data)
+
+# work dir and log file
 rr_path = os.path.abspath("requests/" + str(relmon_request["id"]))
 os.chdir(rr_path)
 # TODO: handle failures
@@ -45,43 +51,34 @@ logFile = open(str(relmon_request["id"]) + ".log", "w")
 os.chmod(str(relmon_request["id"]) + ".log", 0664)
 
 
-# TODO: function for PUT
 def upload_log():
     global logFile, relmon_request
     scp_proc = subprocess.Popen(
         ["scp", "-p",
          logFile.name,
-         USER + "@" + SERVICE_IP + ":" + LOG_DIR_AT_SERVICE])
+         USER + "@" + SERVICE_HOST + ":" + LOG_DIR_AT_SERVICE])
     scp_proc_return = scp_proc.wait()
     if (scp_proc_return != 0):
         # TODO: something more useful
         print("scp fail")
-    conn = httplib.HTTPConnection(SERVICE_IP, 80)
-    conn.connect()
-    headers = {"Content-type": "application/json"}
-    conn.request("PUT",
-                 "/requests/" + str(relmon_request["id"]) + "/log",
-                 json.dumps({"value": True}),
-                 headers)
-    response = conn.getresponse()
-    conn.close()
-    if (response.status != httplib.OK):
+    status, data = utils.httpp(
+        "PUT",
+        SERVICE_HOST,
+        "/requests/" + args.id + "/status",
+        data=json.dumps({"value": True}))
+    if (status != httplib.OK):
         # FIXME: solve this problem
         print("PUT about log fail")
 
 
 def put_status(status):
     global logFile, relmon_request
-    conn = httplib.HTTPConnection(SERVICE_IP, 80)
-    conn.connect()
-    headers = {"Content-type": "application/json"}
-    conn.request("PUT",
-                 "/requests/" + str(relmon_request["id"]) + "/status",
-                 json.dumps({"value": status}),
-                 headers)
-    response = conn.getresponse()
-    conn.close()
-    if (response.status != httplib.OK):
+    status, data = utils.httpp(
+        "PUT",
+        SERVICE_HOST,
+        "/requests/" + args.id + "/status",
+        data=json.dumps({"value": status}))
+    if (status != httplib.OK):
         # FIXME: solve this problem
         print("konkreciai juokutis")
 
@@ -92,9 +89,7 @@ def finalize_report_generation(status):
     upload_log()
     put_status(status)
 
-
 report_path = RELMON_PATH + relmon_request["name"] + '/'
-
 
 for category in relmon_request["categories"]:
     if (not category["lists"]["target"]):

@@ -6,13 +6,15 @@ request id (from relmon request service).
 
 import os
 import argparse
-import requests
+import httplib
+import json
 from common import utils
 
 # TODO: move hardcoded values to config file
 CERTIFICATE_PATH = "/afs/cern.ch/user/j/jdaugala/.globus/usercert.pem"
 KEY_PATH = "/afs/cern.ch/user/j/jdaugala/.globus/userkey.pem"
-SERVICE_ADDRESS = "http://188.184.185.27/"
+SERVICE_HOST = "188.184.185.27"
+CMSWEB_HOST = "cmsweb.cern.ch"
 
 parser = argparse.ArgumentParser()
 parser.add_argument(dest="id", help="FIXME: id help")
@@ -20,11 +22,12 @@ parser.add_argument(dest="id", help="FIXME: id help")
 # parser.add_argument("--dry", dest="dry", action="store_true", default=False)
 args = parser.parse_args()
 
-req = requests.get(SERVICE_ADDRESS + "requests/" + args.id)
-if (req.status_code != requests.codes.ok):
+status, data = utils.httpget(SERVICE_HOST, "/requests/" + str(args.id))
+if (status != httplib.OK):
     # FIXME: solve this problem
     exit()
-relmon_request = req.json()
+relmon_request = json.loads(data)
+
 rr_path = "requests/" + str(relmon_request["id"])
 original_umask = os.umask(0)
 if (not os.path.exists(rr_path)):
@@ -57,20 +60,13 @@ for category in relmon_request["categories"]:
             for file_url in file_urls:
                 if (sample["ROOT_file_name_part"] not in file_url):
                     continue
-                # stream=True -- for large files
-                r = requests.get(file_url,
-                                 stream=True,
-                                 verify=False,
-                                 cert=(CERTIFICATE_PATH, KEY_PATH))
-                with open(file_url.split("/")[-1], 'wb') as f:
-                    for chunk in r.iter_content(chunk_size=1024):
-                        if (chunk):  # filter out keep-alive new chunks
-                            f.write(chunk)
-                            f.flush()
-                    # <- end of chunks
-                    if (f):
-                        downloaded_count += 1
+                # TODO: handle failures (httpsget_large_file)
+                utils.httpsget_large_file(file_url.split("/")[-1],
+                                          CMSWEB_HOST,
+                                          file_url)
+                downloaded_count += 1
             # <- end of file_urls
+            print(downloaded_count)
             # Maybe do something else with the downloaded_count
             if (downloaded_count > 0):
                 sample["status"] = "downloaded"
@@ -78,13 +74,14 @@ for category in relmon_request["categories"]:
                     "Content-type": "application/json",
                     "Accept": "text/plain"}
                 # TODO: handle failures (request)
-                r = requests.put(
-                    SERVICE_ADDRESS + "requests/" + args.id +
+                status, data = utils.httpp(
+                    "PUT",
+                    SERVICE_HOST,
+                    "/requests/" + args.id +
                     "/categories/" + category["name"] +
                     "/lists/" + lname +
                     "/samples/" + sample["name"],
-                    json=sample,
-                    headers=headers)
+                    data=json.dumps(sample))
         # <- end of samples
         # NOTE: same dir for ref and target
         # os.chdir("..")

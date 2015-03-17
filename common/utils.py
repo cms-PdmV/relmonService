@@ -4,33 +4,103 @@ Helper functions for relmon request service.
 
 import fractions
 import re
-import requests
 import json
-import paramiko
 import threading
 import relmon_shared
 import os
+import httplib
 
 # TODO: move hardcoded values to config file
-DQM_ROOT_URL = "https://cmsweb.cern.ch/dqm/relval/data/browse/ROOT/"
+
+CMSWEB_HOST = "cmsweb.cern.ch"
+DQM_ROOT_URL = "/dqm/relval/data/browse/ROOT/"
+DATATIER_CHECK_URL = "/reqmgr/reqMgr/outputDatasetsByRequestName/"
 HYPERLINK_REGEX = re.compile(r"href=['\"]([-./\w]*)['\"]")
 CERTIFICATE_PATH = "/afs/cern.ch/user/j/jdaugala/.globus/usercert.pem"
 KEY_PATH = "/afs/cern.ch/user/j/jdaugala/.globus/userkey.pem"
-CMSWEB_URL = "https://cmsweb.cern.ch"
-DATATIER_CHECK_URL =\
-    "https://cmsweb.cern.ch/reqmgr/reqMgr/outputDatasetsByRequestName/"
 CREDENTIALS_PATH = "/afs/cern.ch/user/j/jdaugala/private/credentials"
 REMOTE_WORK_DIR = "/build/jdaugala/relmon"
+REMOTE_HOST = "cmsdev04.cern.ch"
 DOWNLOADER_CMD = "cd " + REMOTE_WORK_DIR + "; ./download_DQM_ROOT.py "
-REPORT_GENERATOR_CMD = ("cd /build/jdaugala/CMSSW_7_4_0_pre8\n" +
-                        " eval `scramv1 runtime -sh`\n" +
+REPORT_GENERATOR_CMD = ("cd /build/jdaugala/CMSSW_7_4_0_pre8\n"
+                        " eval `scramv1 runtime -sh`\n"
                         "cd " + REMOTE_WORK_DIR +
                         "\n ./compare.py ")
 CLEANER_CMD = "cd " + REMOTE_WORK_DIR + "; ./clean.py "
 
 credentials = {}
+# TODO: handle failures
 with open(CREDENTIALS_PATH) as cred_file:
     credentials = json.load(cred_file)
+
+
+def httpget(host, url, port=80):
+    conn = httplib.HTTPConnection(host, port)
+    conn.connect()
+    conn.request("GET", url=url)
+    response = conn.getresponse()
+    status = response.status
+    content = response.read()
+    conn.close()
+    return status, content
+
+
+def httpsget(host,
+             url,
+             port=443,
+             certpath=CERTIFICATE_PATH,
+             keypath=KEY_PATH,
+             password=None):
+    conn = httplib.HTTPSConnection(host=host,
+                                   port=port,
+                                   key_file=keypath,
+                                   cert_file=certpath)
+    conn.connect()
+    conn.request("GET", url=url)
+    response = conn.getresponse()
+    status = response.status
+    content = response.read()
+    conn.close()
+    return status, content
+
+
+def httpsget_large_file(filepath,
+                        host,
+                        url,
+                        port=443,
+                        certpath=CERTIFICATE_PATH,
+                        keypath=KEY_PATH,
+                        password=None):
+    conn = httplib.HTTPSConnection(host=host,
+                                   port=port,
+                                   key_file=keypath,
+                                   cert_file=certpath)
+    conn.connect()
+    conn.request("GET", url=url)
+    response = conn.getresponse()
+    with open(filepath, "wb") as dest_file:
+        while True:
+            chunk = response.read(1048576)
+            if chunk:
+                dest_file.write(chunk)
+                dest_file.flush()
+            else:
+                break
+
+
+def httpp(method, host, url, data, port=80):
+    conn = httplib.HTTPConnection(host, port)
+    conn.connect()
+    headers = {"Content-type": "application/json"}
+    conn.request(method=method,
+                 url=url,
+                 body=data,
+                 headers=headers)
+    response = conn.getresponse()
+    status = response.status
+    content = response.read()
+    conn.close()
+    return status, content
 
 
 # str:CMSSW -- version . E.g. "CMSSW_7_2_"
@@ -46,15 +116,14 @@ def get_ROOT_file_urls(CMSSW, category_name):
     if (CMSSW is None):
         return None
     url += CMSSW.group() + "x/"
-    r = requests.get(url,
-                     verify=False,
-                     cert=(CERTIFICATE_PATH, KEY_PATH))
+    status, data = httpsget(host=CMSWEB_HOST,
+                            url=url)
     # TODO: handle failure
-    if (r.status_code != requests.codes.ok):
+    if (status != httplib.OK):
         return None
-    hyperlinks = HYPERLINK_REGEX.findall(r.text)[1:]
+    hyperlinks = HYPERLINK_REGEX.findall(data)[1:]
     for u_idx, url in enumerate(hyperlinks):
-        hyperlinks[u_idx] = CMSWEB_URL + url
+        hyperlinks[u_idx] = url
     return hyperlinks
 
 
@@ -62,13 +131,12 @@ def get_ROOT_file_urls(CMSSW, category_name):
 # produces DQMIO dataset then the second object of the returned
 # tuple is the name of that DQMIO dataset
 def get_DQMIO_status(sample_name):
-    r = requests.get(DATATIER_CHECK_URL + sample_name,
-                     verify=False,
-                     cert=(CERTIFICATE_PATH, KEY_PATH))
+    status, data = httpsget(host=CMSWEB_HOST,
+                            url=DATATIER_CHECK_URL + sample_name)
     # TODO: handle request failure
-    if (r.status_code == requests.codes.ok):
-        if ("DQMIO" in r.text):
-            rjson = json.loads(r.text.replace('\'', '\"'))
+    if (status == httplib.OK):
+        if ("DQMIO" in data):
+            rjson = json.loads(data.replace('\'', '\"'))
             DQMIO_string = [i for i in rjson if "DQMIO" in i][0]
             if ("None" in DQMIO_string):
                 return ("waiting", None)
@@ -106,15 +174,16 @@ def sample_fraction_by_status(relmon_request, status, ignore):
 # wrap it in another thread - SSHThread
 class SSHThread(threading.Thread):
     def __init__(self, command):
+        import paramiko
         threading.Thread.__init__(self)
         self.command = command
         self.ssh_client = paramiko.SSHClient()
+        self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
     def run(self):
         print("SSHThread")
         print(self.command)
-        self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.ssh_client.connect("cmsdev04.cern.ch",
+        self.ssh_client.connect(REMOTE_HOST,
                                 username=credentials["user"],
                                 password=credentials["pass"])
         (stdin, stdout, stderr) = self.ssh_client.exec_command(self.command)
