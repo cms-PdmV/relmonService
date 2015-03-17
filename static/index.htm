@@ -23,10 +23,16 @@
        class="container"
        ng-controller="Request_controller as request_controller">
 
-<!-- BEGIN new RelMon request part -->
-      <h1>New RelMon request (workflow)</h1>
-
-      <form name="requests_form" ng-submit="request_controller.try_submit()">
+      <!-- BEGIN new RelMon request part -->
+      <h1 ng-init="new_request_collapsed = true">New RelMon request (workflow)
+        <button class="btn btn-default btn-xs"
+              ng-click="new_request_collapsed = !new_request_collapsed">
+          Show/Hide
+        </button>
+      </h1>
+      <form name="requests_form"
+            ng-submit="request_controller.try_submit()"
+            collapse="new_request_collapsed">
         <tabset>
           <tab ng-repeat="category in request_controller.sample_inputs"
                heading="{{category.name}}">
@@ -60,11 +66,10 @@
 
       <hr />
 
-<!-- BEGIN Latest requests part -->
+      <!-- BEGIN Latest requests part -->
       <h1>Latest requests</h1>
-
-<!-- TODO: make table beautiful -->
-      <table class="table table-striped table-bordered table-hover row">
+      
+      <table class="table table-bordered row">
         <thead>
           <tr>
             <th class="col-sm-3">Workflow</th>
