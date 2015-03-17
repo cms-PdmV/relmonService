@@ -132,22 +132,16 @@ class Terminator(Resource):
     def __init__(self):
         super(Terminator, self).__init__()
 
+    @add_default_HTTP_returns
     def post(self, request_id):
-        try:
-            relmon_shared.high_priority_q.put(self)
-            relmon_request = [i for i in relmon_shared.data if
-                              i["id"] == request_id][0]
-            if (utils.is_terminator_alive(request_id)):
-                return "Already terminating", 409
-            with relmon_shared.data_lock:
-                relmon_request["status"] = "terminating"
-            relmon_shared.high_priority_q.get()
-            relmon_shared.high_priority_q.task_done()
-            utils.start_terminator(request_id)
-            return "OK", 200
-        except IndexError as err:
-            print(err)
-            return "Not Found", 404
-        except Exception as ex:
-            print(ex)
-            return "Internal error", 500
+        relmon_shared.high_priority_q.put(self)
+        relmon_request = [i for i in relmon_shared.data if
+                          i["id"] == request_id][0]
+        if (utils.is_terminator_alive(request_id)):
+            return "Already terminating", 409
+        with relmon_shared.data_lock:
+            relmon_request["status"] = "terminating"
+        relmon_shared.high_priority_q.get()
+        relmon_shared.high_priority_q.task_done()
+        utils.start_terminator(request_id)
+        return "OK", 200
