@@ -64,7 +64,7 @@ def upload_log():
     status, data = utils.httpp(
         "PUT",
         SERVICE_HOST,
-        "/requests/" + args.id + "/status",
+        "/requests/" + args.id + "/log",
         data=json.dumps({"value": True}))
     if (status != httplib.OK):
         # FIXME: solve this problem
