@@ -5,19 +5,24 @@ present.
 """
 from fractions import Fraction
 import time
-from threading import Thread
+import threading
 from common import utils, relmon_shared
+import itertools
 
 
-class RelmonReportDaemon(Thread):
+class RelmonReportDaemon(threading.Thread):
     def __init__(self):
-        Thread.__init__(self)
+        threading.Thread.__init__(self)
         self.setDaemon(True)
 
     # TODO: reduce indentation
     def run(self):
         while True:
-            for relmon_request in relmon_shared.data:
+            relmon_request_iter = itertools.islice(
+                relmon_shared.data,
+                0,
+                len(relmon_shared.data))
+            for relmon_request in relmon_request_iter:
                 if (relmon_request["status"] in
                     ["finished", "failed", "terminating"]):
                     # then:
