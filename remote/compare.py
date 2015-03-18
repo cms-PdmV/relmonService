@@ -123,7 +123,10 @@ for category in relmon_request["categories"]:
         finalize_report_generation("failed")
         exit()
     # TODO: handle failures
+    cat_report_path = report_path + category["name"]
+    if (os.path.exists(cat_report_path)):
+        shutil.rmtree(cat_report_path)
     shutil.copytree("reports/" + category["name"],
-                    report_path + category["name"])
+                    cat_report_path)
 finalize_report_generation("finished")
 # TODO: cleanup
