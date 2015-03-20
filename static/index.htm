@@ -125,6 +125,8 @@
                         <span class="badge"
                               ng-class="request_controller.get_badge_class_by_status(sample.status)">
                           {{sample.status}}</span>
+                        <span ng-if="['DQMIO', 'ROOT', 'downloaded'].indexOf(sample.status) >= 0"
+                              class="badge small">ROOT {{sample.root_count}}/{{sample.run_count}}</span>
                       </li>
                     </ul>
                   </accordion-group>

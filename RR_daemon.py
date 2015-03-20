@@ -9,6 +9,8 @@ import threading
 from common import utils, relmon_shared
 import itertools
 
+SLEEP_TIME = 10
+
 
 class RelmonReportDaemon(threading.Thread):
     def __init__(self):
@@ -71,7 +73,7 @@ class RelmonReportDaemon(threading.Thread):
                         relmon_request["status"] = "comparing"
                         relmon_shared.write_data()
             print("sleep")
-            time.sleep(13)
+            time.sleep(SLEEP_TIME)
             print("wake")
         # end of while
 
@@ -87,6 +89,7 @@ class RelmonReportDaemon(threading.Thread):
                         continue
                     (DQMIO_status, DQMIO_string) = (
                         utils.get_DQMIO_status(sample["name"]))
+                    run_count = utils.get_run_count(DQMIO_string)
                     relmon_shared.high_priority_q.join()
                     with relmon_shared.data_lock:
                         if (relmon_request["status"] not in
@@ -97,6 +100,7 @@ class RelmonReportDaemon(threading.Thread):
                             continue
                         sample["status"] = DQMIO_status
                         if (DQMIO_status == "DQMIO"):
+                            sample["run_count"] = run_count
                             sample["ROOT_file_name_part"] = (
                                 utils.get_ROOT_name_part(DQMIO_string))
                     if (sample["status"] == "DQMIO"):
@@ -125,7 +129,7 @@ class RelmonReportDaemon(threading.Thread):
                         sample_list[0]["status"] = "failed"
                         relmon_request["status"] = "failed"
                         relmon_shared.write_data()
-                    # clean up
+                    # TODO: clean up
                     return
                 relmon_shared.high_priority_q.join()
                 with relmon_shared.data_lock:
@@ -136,6 +140,10 @@ class RelmonReportDaemon(threading.Thread):
                     for sample_idx, sample in enumerate(sample_list):
                         if (sample["status"] != "DQMIO"):
                             continue
-                        if any(sample["ROOT_file_name_part"] in
-                               s for s in file_urls):
+                        matches = [u for u in file_urls
+                                   if (sample["ROOT_file_name_part"] in u)]
+                        sample["root_count"] = len(matches)
+                        if (len(matches) > 0 and
+                            len(matches) == sample["run_count"]):
+                            # then:
                             sample["status"] = "ROOT"

@@ -15,6 +15,7 @@ import httplib
 CMSWEB_HOST = "cmsweb.cern.ch"
 DQM_ROOT_URL = "/dqm/relval/data/browse/ROOT/"
 DATATIER_CHECK_URL = "/reqmgr/reqMgr/outputDatasetsByRequestName/"
+DATASET_RUNS_URL = "/dbs/prod/global/DBSReader/runs?dataset="
 HYPERLINK_REGEX = re.compile(r"href=['\"]([-./\w]*)['\"]")
 CERTIFICATE_PATH = "/afs/cern.ch/user/j/jdaugala/.globus/usercert.pem"
 KEY_PATH = "/afs/cern.ch/user/j/jdaugala/.globus/userkey.pem"
@@ -143,6 +144,24 @@ def get_DQMIO_status(sample_name):
             return ("DQMIO", DQMIO_string)
         return ("NoDQMIO", None)
     return ("waiting", None)
+
+
+def get_run_count(DQMIO_string):
+    if (not DQMIO_string):
+        return None
+    status, data = httpsget(host=CMSWEB_HOST,
+                            url=DATASET_RUNS_URL + DQMIO_string)
+    # TODO: handle request failure
+    if (status != httplib.OK):
+        return None
+    print(data)
+    try:
+        rjson = json.loads(data)
+        print(rjson)
+        return (len(rjson[0]["run_num"]))
+    except (ValueError, LookupError) as err:
+        print(err)
+        return None
 
 
 def get_ROOT_name_part(DQMIO_string):
