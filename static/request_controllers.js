@@ -51,7 +51,7 @@ function Request_controller($http, $modal) {
                         "data": ""
                     }
                 },
-                "HLT": false
+                "HLT": "both"
             };
             me.sample_inputs.push(input);
         }

@@ -44,11 +44,17 @@ if (status != httplib.OK):
 relmon_request = json.loads(data)
 
 # work dir and log file
-rr_path = os.path.abspath("requests/" + str(relmon_request["id"]))
-os.chdir(rr_path)
+local_relmon_request = os.path.abspath(
+    "requests/" + str(relmon_request["id"]))
+os.chdir(local_relmon_request)
+
+local_reports = local_relmon_request + "/reports/"
+
 # TODO: handle failures
 logFile = open(str(relmon_request["id"]) + ".log", "w")
 os.chmod(str(relmon_request["id"]) + ".log", 0664)
+
+remote_reports = RELMON_PATH + relmon_request["name"] + '/'
 
 
 def upload_log():
@@ -89,44 +95,73 @@ def finalize_report_generation(status):
     upload_log()
     put_status(status)
 
-report_path = RELMON_PATH + relmon_request["name"] + '/'
+
+def get_local_subreport_path(category_name, HLT):
+    path = local_reports + category_name
+    if (HLT):
+        path += "_HLT"
+    return path
+
+
+def validate(category_name, HLT):
+    local_subreport = get_local_subreport_path(category_name, HLT)
+    # TODO: handle dirs creation failures
+    if (not os.path.exists(local_subreport)):
+        os.makedirs(local_subreport)
+        os.chmod(local_subreport, 0775)
+    validation_cmd = ["ValidationMatrix.py",
+                      "-a", os.path.abspath(category_name),
+                      "-o", os.path.abspath(local_subreport),
+                      "-N 6",
+                      "--hash_name"]
+    if (HLT):
+        validation_cmd.append("--HLT")
+    logFile.write("!       SUBPROCESS: " + " ".join(validation_cmd) + "\n")
+    logFile.flush()
+    # return process exit code
+    return subprocess.Popen(
+        validation_cmd, stdout=logFile, stderr=logFile).wait()
+
+
+def compress(category_name, HLT):
+    local_subreport = get_local_subreport_path(category_name, HLT)
+    dir2webdir_cmd = ['dir2webdir.py', local_subreport]
+    logFile.write("!       SUBPROCESS:" + " ".join(dir2webdir_cmd) + "\n")
+    logFile.flush()
+    return (subprocess.Popen(dir2webdir_cmd,
+                             stdout=logFile,
+                             stderr=logFile)
+            .wait())
+
+
+def move_to_afs(category_name, HLT):
+    local_subreport = get_local_subreport_path(category_name, HLT)
+    remote_subreport = remote_reports + category_name
+    if (HLT):
+        remote_subreport += "_HLT"
+    # TODO: handle failures
+    if (os.path.exists(remote_subreport)):
+        shutil.rmtree(remote_subreport)
+    shutil.copytree(local_subreport, remote_subreport)
 
 for category in relmon_request["categories"]:
     if (not category["lists"]["target"]):
         continue
-    # TODO: handle dirs creation failure
-    if (not os.path.exists("reports/" + category["name"])):
-        os.makedirs("reports/" + category["name"])
-        os.chmod("reports/" + category["name"], 0775)
-    validation_cmd = ["ValidationMatrix.py",
-                      "-a",
-                      os.path.abspath(category["name"]),
-                      "-o",
-                      os.path.abspath("reports/" + category["name"]),
-                      "-N 6",
-                      "--hash_name"]
-    if (category["HLT"]):
-        validation_cmd.append("--HLT")
-    logFile.write("!       SUBPROCESS: " + " ".join(validation_cmd) + "\n")
-    logFile.flush()
-    v_proc = subprocess.Popen(validation_cmd, stdout=logFile, stderr=logFile)
-    v_proc_return = v_proc.wait()
-    if (v_proc_return != 0):
-        finalize_report_generation("failed")
-        exit()
-    dir2webdir_cmd = ['dir2webdir.py', "reports/" + category["name"]]
-    logFile.write("!       SUBPROCESS:" + " ".join(dir2webdir_cmd) + "\n")
-    logFile.flush()
-    d2w_proc = subprocess.Popen(dir2webdir_cmd, stdout=logFile, stderr=logFile)
-    d2w_proc_return = d2w_proc.wait()
-    if (d2w_proc_return != 0):
-        finalize_report_generation("failed")
-        exit()
-    # TODO: handle failures
-    cat_report_path = report_path + category["name"]
-    if (os.path.exists(cat_report_path)):
-        shutil.rmtree(cat_report_path)
-    shutil.copytree("reports/" + category["name"],
-                    cat_report_path)
+    if (category["name"] == "Generator" or category["HLT"] != "only"):
+        # validate and compress; failure if either task failed
+        if ((validate(category["name"], False) != 0) or
+            (compress(category["name"], False) != 0)):
+            # then:
+            finalize_report_generation("failed")
+            exit(1)
+        move_to_afs(category["name"], False)
+    if (category["name"] == "Generator"):
+        continue
+    if (category["HLT"] != "no"):
+        if ((validate(category["name"], True) != 0) or
+            (compress(category["name"], True) != 0)):
+            finalize_report_generation("failed")
+            exit(1)
+        move_to_afs(category["name"], True)
 finalize_report_generation("finished")
 # TODO: cleanup

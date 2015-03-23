@@ -48,7 +48,11 @@
               </ng-form>
             </div>
             <label ng-if="category.name != 'Generator'" class="checkbox">
-              <input type="checkbox" ng-model="category.HLT"></input>HLT</label>
+              <div class="btn-group">
+                <label class="btn btn-primary" ng-model="category.HLT" btn-radio="'no'">No HLT</label>
+                <label class="btn btn-primary" ng-model="category.HLT" btn-radio="'only'">Only HLT</label>
+                <label class="btn btn-primary" ng-model="category.HLT" btn-radio="'both'">Both</label>
+              </div>
           </tab>
         </tabset>
         <hr />
