@@ -11,6 +11,11 @@ import itertools
 
 SLEEP_TIME = 10
 
+IGNORE_NOROOT_WORKFLOWS = True
+FINAL_WM_STATUSES = ["rejected", "rejected-archived",
+                     "aborted-completed", "aborted-archived", "announced",
+                     "normal-archived"]
+
 
 class RelmonReportDaemon(threading.Thread):
     def __init__(self):
@@ -25,9 +30,9 @@ class RelmonReportDaemon(threading.Thread):
                 0,
                 len(relmon_shared.data))
             for relmon_request in relmon_request_iter:
-                if (relmon_request["status"] in
-                    ["finished", "failed", "terminating"]):
-                    # then:
+                if (relmon_request["status"] in ["finished",
+                                                 "failed",
+                                                 "terminating"]):
                     continue
                 rid = relmon_request["id"]
                 frac_threshold = (
@@ -37,7 +42,7 @@ class RelmonReportDaemon(threading.Thread):
                     # there are enough samples with "ROOT" status
                     self.update_ROOT_statuses(relmon_request)
                     frac_ROOT = utils.sample_fraction_by_status(
-                        relmon_request, ["ROOT"], ["NoDQMIO"])
+                        relmon_request, ["ROOT"], ["NoDQMIO", "NoROOT"])
                 relmon_shared.high_priority_q.join()
                 with relmon_shared.data_lock:
                     if (relmon_request["status"] in ["initial", "DQMIO"]):
@@ -53,7 +58,7 @@ class RelmonReportDaemon(threading.Thread):
                     frac_waiting = utils.sample_fraction_by_status(
                         relmon_request,
                         status=["initial", "waiting"],
-                        ignore=["NoDQMIO"])
+                        ignore=["NoDQMIO", "NoROOT"])
                     if (frac_waiting > Fraction(0)):
                         self.update_ROOT_statuses(relmon_request)
                 relmon_shared.high_priority_q.join()
@@ -62,7 +67,7 @@ class RelmonReportDaemon(threading.Thread):
                         not utils.is_downloader_alive(rid)):
                         # then:
                         frac_ROOT = utils.sample_fraction_by_status(
-                            relmon_request, ["ROOT"], ["NoDQMIO"])
+                            relmon_request, ["ROOT"], ["NoDQMIO", "NoROOT"])
                         if (frac_ROOT > Fraction(0)):
                             utils.start_downloader(rid)
                 # TODO: start report generation not in this daemon
@@ -100,21 +105,33 @@ class RelmonReportDaemon(threading.Thread):
                             continue
                         sample["status"] = DQMIO_status
                         if (DQMIO_status == "DQMIO"):
-                            sample["run_count"] = run_count
                             sample["ROOT_file_name_part"] = (
                                 utils.get_ROOT_name_part(DQMIO_string))
+                            sample["run_count"] = run_count
                     if (sample["status"] == "DQMIO"):
                         category_has_DQMIO_samples = True
             if (not category_has_DQMIO_samples):
                 continue
             for sample_list in category["lists"].itervalues():
-                    # TODO: handle failures (util.get_ROOT_file_urls)
-                    # # failed CMSSW parsing
-                    # relmon_request["status"] = "failed"
-                    # sample_list[0]["status"] = "failed"
-                    # return
-                    # # r.status_code != requests.codes.ok
-                    # continue
+                for sample in sample_list:
+                    wm_status = (
+                        utils.get_workload_manager_status(sample["name"]))
+                    if (sample["wm_status"] == wm_status):
+                        continue
+                    relmon_shared.high_priority_q.join()
+                    with relmon_shared.data_lock:
+                        if (relmon_request["status"] not in ["initial",
+                                                             "DQMIO",
+                                                             "ROOT"]):
+                            return
+                        sample["wm_status"] = wm_status
+                # TODO: handle failures (util.get_ROOT_file_urls)
+                # # failed CMSSW parsing
+                # relmon_request["status"] = "failed"
+                # sample_list[0]["status"] = "failed"
+                # return
+                # # r.status_code != requests.codes.ok
+                # continue
                 file_urls = utils.get_ROOT_file_urls(
                     sample_list[0]["name"],
                     category["name"])
@@ -147,3 +164,6 @@ class RelmonReportDaemon(threading.Thread):
                             len(matches) == sample["run_count"]):
                             # then:
                             sample["status"] = "ROOT"
+                        elif (IGNORE_NOROOT_WORKFLOWS and
+                              sample["wm_status"] in FINAL_WM_STATUSES):
+                            sample["status"] = "NoROOT"

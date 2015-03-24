@@ -50,7 +50,7 @@ class Sample(Resource):
             frac_downloaded = utils.sample_fraction_by_status(
                 relmon_request,
                 status=["downloaded"],
-                ignore=["NoDQMIO"])
+                ignore=["NoDQMIO", "NoROOT"])
             if (relmon_request["status"] == "downloading" and
                 frac_downloaded * 100 >= relmon_request["threshold"]):
                 # then:
@@ -116,7 +116,9 @@ class Requests(Resource):
         for category in args["categories"]:
             for list_idx, sample_list in category["lists"].iteritems():
                 for sample_idx, sample in enumerate(sample_list):
-                    tmp_sample = {"name": sample, "status": "initial"}
+                    tmp_sample = {"name": sample,
+                                  "status": "initial",
+                                  "wm_status": ""}
                     sample_list[sample_idx] = tmp_sample
             new_record["categories"].append(category)
         with relmon_shared.data_lock:

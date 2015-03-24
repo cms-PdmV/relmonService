@@ -104,6 +104,28 @@ def httpp(method, host, url, data, port=80):
     return status, content
 
 
+# given workflow name, returns workflow status from Workload
+# Management database 'wmstats'
+def get_workload_manager_status(sample_name):
+    url = "/couchdb/wmstats/_all_docs?keys=%5B%22"
+    url += sample_name
+    url += "%22%5D&include_docs=true"
+    status, data = httpsget(host=CMSWEB_HOST,
+                            url=url)
+    # TODO: handle failures
+    if (status != httplib.OK):
+        return None
+    try:
+        data = json.loads(data)
+        wm_status = (
+            data["rows"][0]["doc"]["request_status"][-1]["status"])
+        print(wm_status)
+        return wm_status
+    except (ValueError, LookupError) as err:
+        print(err)
+        return None
+
+
 # str:CMSSW -- version . E.g. "CMSSW_7_2_"
 # bool:MC -- True -> Monte Carlo, False -> data
 def get_ROOT_file_urls(CMSSW, category_name):
@@ -154,10 +176,8 @@ def get_run_count(DQMIO_string):
     # TODO: handle request failure
     if (status != httplib.OK):
         return None
-    print(data)
     try:
         rjson = json.loads(data)
-        print(rjson)
         return (len(rjson[0]["run_num"]))
     except (ValueError, LookupError) as err:
         print(err)

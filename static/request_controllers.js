@@ -1,6 +1,8 @@
 /*
  * angular js controllers for relmon request service frontend.
  */
+var SERVICE_ADDRESS = "http://188.184.185.27:80"
+
 var relmon_request_service_frontend = angular.module(
     "relmon_request_service_frontend",
     ["ui.bootstrap"]
@@ -132,7 +134,7 @@ function Request_controller($http, $modal) {
 
     function submit_request(post_data) {
         http_request_prepare();
-        $http.post("http://188.184.185.27/requests",
+        $http.post(SERVICE_ADDRESS + "/requests",
                    post_data)
             .success(http_post_success)
             .error(http_post_error)
@@ -156,6 +158,8 @@ function Request_controller($http, $modal) {
         case "NoDQMIO":
             return "badge-warning";
             // breaks not reachable
+        case "NoROOT":
+            return "badge-warning";
         case "DQMIO":
             return "badge-info";
         case "failed":
@@ -171,7 +175,7 @@ function Request_controller($http, $modal) {
 
     this.get_requests = function() {
         http_request_prepare();
-        $http.get("http://188.184.185.27/requests")
+        $http.get("requests")
             .success(http_get_success)
             .error(http_get_error)
             .finally(http_finally);
@@ -202,7 +206,7 @@ function Request_controller($http, $modal) {
             function() {
                 http_request_prepare();
                 me.posting_terminator[relmon_request["id"]] = true;
-                $http.post("http://188.184.185.27/requests/" + relmon_request["id"] + "/terminate")
+                $http.post(SERVICE_ADDRESS + "/requests/" + relmon_request["id"] + "/terminate")
                     .success(http_post_success)
                     .error(http_post_error)
                     .finally(function(){
