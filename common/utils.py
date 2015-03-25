@@ -9,6 +9,7 @@ import threading
 import relmon_shared
 import os
 import httplib
+import iters
 
 # TODO: move hardcoded values to config file
 
@@ -87,6 +88,7 @@ def httpsget_large_file(filepath,
                 dest_file.flush()
             else:
                 break
+    conn.close()
 
 
 def httpp(method, host, url, data, port=80):
@@ -119,7 +121,6 @@ def get_workload_manager_status(sample_name):
         data = json.loads(data)
         wm_status = (
             data["rows"][0]["doc"]["request_status"][-1]["status"])
-        print(wm_status)
         return wm_status
     except (ValueError, LookupError) as err:
         print(err)
@@ -193,17 +194,16 @@ def get_ROOT_name_part(DQMIO_string):
         return DS + "__" + CMSSW + '-' + PS + '-'
 
 
-def sample_fraction_by_status(relmon_request, status, ignore):
+def sample_fraction_by_status(relmon_request, status, ignore=None):
     not_ignored = 0
     with_status = 0
-    for category in relmon_request["categories"]:
-        for sample_list in category["lists"].itervalues():
-            for sample in sample_list:
-                if (sample["status"] in ignore):
-                    continue
-                if (sample["status"] in status):
-                    with_status += 1
-                not_ignored += 1
+    for sample in iters.samples(
+            relmon_request["categories"],
+            only_statuses=None,
+            skip_statuses=ignore):
+        if (sample["status"] in status):
+            with_status += 1
+        not_ignored += 1
     if (not_ignored == 0):
         return fractions.Fraction(0)
     return fractions.Fraction(with_status, not_ignored)
@@ -261,8 +261,8 @@ class TerminatorThread(threading.Thread):
         cleaner = SSHThread(CLEANER_CMD + str(self.request_id))
         cleaner.start()
         cleaner.join()
-        if (os.path.exists(
-                "static/validation_logs/" + str(self.request_id) + ".log")):
+        if (os.path.exists("static/validation_logs/" +
+                           str(self.request_id) + ".log")):
             os.remove("static/validation_logs/" +
                       str(self.request_id) + ".log")
         self._remove_from_data()
