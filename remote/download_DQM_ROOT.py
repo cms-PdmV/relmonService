@@ -34,12 +34,12 @@ if (not os.path.exists(rr_path)):
     os.makedirs(rr_path, 0770)
 os.chdir(rr_path)
 for category in relmon_request["categories"]:
+    if (not category["lists"]["target"]):
+        continue
     if (not os.path.exists(category["name"])):
         os.makedirs(category["name"], 0770)
     os.chdir(category["name"])
     for lname, sample_list in category["lists"].iteritems():
-        if (not sample_list):
-            continue
         # NOTE: ref and target samples in the same
         # directory for automatic pairing
         #
@@ -51,24 +51,25 @@ for category in relmon_request["categories"]:
             sample_list[0]["name"],
             category["name"])
         for sample in sample_list:
-            print(sample["name"])
             if (sample["status"] != "ROOT"):
-                print("Not ROOT. Skipping")
                 continue
-            assert "jdaugala" in os.getcwd()
-            downloaded_count = 0
+            file_count = 0
             for file_url in file_urls:
                 if (sample["ROOT_file_name_part"] not in file_url):
+                    continue
+                # TODO: handle failures (httpsget_large_file)
+                if (os.path.isfile(file_url.split("/")[-1])):
+                    file_count += 1
                     continue
                 # TODO: handle failures (httpsget_large_file)
                 utils.httpsget_large_file(file_url.split("/")[-1],
                                           CMSWEB_HOST,
                                           file_url)
-                downloaded_count += 1
+                file_count += 1
+
             # <- end of file_urls
-            print(downloaded_count)
             # Maybe do something else with the downloaded_count
-            if (downloaded_count > 0):
+            if (file_count == sample["run_count"]):
                 sample["status"] = "downloaded"
                 headers = {
                     "Content-type": "application/json",
