@@ -54,7 +54,8 @@ class Sample(Resource):
             if (relmon_request["status"] == "downloading" and
                 frac_downloaded * 100 >= relmon_request["threshold"]):
                 # then:
-                relmon_request["status"] = "downloaded"
+                utils.start_reporter(request_id)
+                relmon_request["status"] = "comparing"
             relmon_shared.write_data()
             return "OK", 200
 

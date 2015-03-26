@@ -61,13 +61,6 @@ class RelmonReportDaemon(threading.Thread):
                             not utils.is_downloader_alive(rid)):
                             # then:
                             utils.start_downloader(rid)
-                # TODO: start report generation not in this daemon
-                relmon_shared.high_priority_q.join()
-                with relmon_shared.data_lock:
-                    if (relmon_request["status"] == "downloaded"):
-                        utils.start_reporter(rid)
-                        relmon_request["status"] = "comparing"
-                        relmon_shared.write_data()
             print("sleep")
             time.sleep(SLEEP_TIME)
             print("wake")
