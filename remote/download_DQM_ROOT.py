@@ -3,12 +3,11 @@
 ROOT files downloader (and reporter) for given relmon
 request id (from relmon request service).
 """
-
 import os
 import argparse
 import httplib
 import json
-from common import utils
+from common import utils, relmon
 
 # TODO: move hardcoded values to config file
 CERTIFICATE_PATH = "/afs/cern.ch/user/j/jdaugala/.globus/usercert.pem"
@@ -17,29 +16,34 @@ SERVICE_HOST = "188.184.185.27"
 CMSWEB_HOST = "cmsweb.cern.ch"
 
 parser = argparse.ArgumentParser()
-parser.add_argument(dest="id", help="FIXME: id help")
+parser.add_argument(dest="id_", help="FIXME: id help")
 # parser.add_argument("--")
 # parser.add_argument("--dry", dest="dry", action="store_true", default=False)
 args = parser.parse_args()
 
-status, data = utils.httpget(SERVICE_HOST, "/requests/" + str(args.id))
+status, data = utils.httpget(SERVICE_HOST, "/requests/" + str(args.id_))
+print(status)
+print(data)
 if (status != httplib.OK):
     # FIXME: solve this problem
-    exit()
-relmon_request = json.loads(data)
+    exit(1)
+request = relmon.RelmonRequest(**json.loads(data))
 
-rr_path = "requests/" + str(relmon_request["id"])
+rr_path = "requests/" + str(request.id_)
 original_umask = os.umask(0)
 if (not os.path.exists(rr_path)):
     os.makedirs(rr_path, 0770)
 os.chdir(rr_path)
-for category in relmon_request["categories"]:
+for category in request.categories:
+    print(category["name"])
+    print(category["lists"]["target"])
     if (not category["lists"]["target"]):
         continue
     if (not os.path.exists(category["name"])):
         os.makedirs(category["name"], 0770)
     os.chdir(category["name"])
     for lname, sample_list in category["lists"].iteritems():
+        print(lname)
         # NOTE: ref and target samples in the same
         # directory for automatic pairing
         #
@@ -69,19 +73,20 @@ for category in relmon_request["categories"]:
 
             # <- end of file_urls
             # Maybe do something else with the downloaded_count
+            print(file_count)
+            print(sample["run_count"])
             if (file_count == sample["run_count"]):
                 sample["status"] = "downloaded"
                 headers = {
                     "Content-type": "application/json",
                     "Accept": "text/plain"}
                 # TODO: handle failures (request)
-                status, data = utils.httpp(
+                status, data = utils.http(
                     "PUT",
                     SERVICE_HOST,
-                    "/requests/" + args.id +
-                    "/categories/" + category["name"] +
-                    "/lists/" + lname +
-                    "/samples/" + sample["name"],
+                    ("/requests/" + str(request.id_) + "/categories/" +
+                     category["name"] + "/lists/" + lname + "/samples/" +
+                     sample["name"]),
                     data=json.dumps(sample))
         # <- end of samples
         # NOTE: same dir for ref and target

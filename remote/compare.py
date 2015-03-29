@@ -10,8 +10,7 @@ import argparse
 import httplib
 import subprocess
 import shutil
-from common import utils
-
+from common import utils, relmon
 
 # TODO: move hardcoded values to config file
 CERTIFICATE_PATH = "/afs/cern.ch/user/j/jdaugala/.globus/usercert.pem"
@@ -31,34 +30,34 @@ with open(CREDENTIALS_PATH) as cred_file:
 
 # parse args
 parser = argparse.ArgumentParser()
-parser.add_argument(dest="id", help="FIXME: id help")
+parser.add_argument(dest="id_", help="FIXME: id help")
 # TODO: other arguments
 args = parser.parse_args()
 
 # get RelMon
 status, data = utils.httpget(SERVICE_HOST,
-                             "/requests/" + args.id)
+                             "/requests/" + str(args.id_))
 if (status != httplib.OK):
     # FIXME: solve this problem
-    exit()
-relmon_request = json.loads(data)
+    exit(1)
+request = relmon.RelmonRequest(**json.loads(data))
 
 # work dir and log file
 local_relmon_request = os.path.abspath(
-    "requests/" + str(relmon_request["id"]))
+    "requests/" + str(request.id_))
 os.chdir(local_relmon_request)
 
 local_reports = local_relmon_request + "/reports/"
 
 # TODO: handle failures
-logFile = open(str(relmon_request["id"]) + ".log", "w")
-os.chmod(str(relmon_request["id"]) + ".log", 0664)
+logFile = open(str(request.id_) + ".log", "w")
+os.chmod(str(request.id_) + ".log", 0664)
 
-remote_reports = RELMON_PATH + relmon_request["name"] + '/'
+remote_reports = RELMON_PATH + request.name + '/'
 
 
 def upload_log():
-    global logFile, relmon_request
+    global logFile, request
     scp_proc = subprocess.Popen(
         ["scp", "-p",
          logFile.name,
@@ -67,22 +66,23 @@ def upload_log():
     if (scp_proc_return != 0):
         # TODO: something more useful
         print("scp fail")
-    status, data = utils.httpp(
+    status, data = utils.http(
         "PUT",
         SERVICE_HOST,
-        "/requests/" + args.id + "/log",
+        "/requests/" + str(request.id_) + "/log",
         data=json.dumps({"value": True}))
     if (status != httplib.OK):
         # FIXME: solve this problem
         print("PUT about log fail")
 
 
+# TODO: think of other ways for controllers to know about failures/success
 def put_status(status):
-    global logFile, relmon_request
-    status, data = utils.httpp(
+    global logFile, request
+    status, data = utils.http(
         "PUT",
         SERVICE_HOST,
-        "/requests/" + args.id + "/status",
+        "/requests/" + str(request.id_) + "/status",
         data=json.dumps({"value": status}))
     if (status != httplib.OK):
         # FIXME: solve this problem
@@ -104,6 +104,7 @@ def get_local_subreport_path(category_name, HLT):
 
 
 def validate(category_name, HLT):
+    global logFile
     local_subreport = get_local_subreport_path(category_name, HLT)
     # TODO: handle dirs creation failures
     if (not os.path.exists(local_subreport)):
@@ -144,7 +145,7 @@ def move_to_afs(category_name, HLT):
         shutil.rmtree(remote_subreport)
     shutil.copytree(local_subreport, remote_subreport)
 
-for category in relmon_request["categories"]:
+for category in request.categories:
     if (not category["lists"]["target"]):
         continue
     if (category["name"] == "Generator" or category["HLT"] != "only"):

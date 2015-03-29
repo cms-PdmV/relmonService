@@ -14,22 +14,24 @@
 
     <script src="request_controllers.js"></script>
   </head>
+
   <body>
-
 <!-- BEGIN main -->
-    <div
-       ng-app="relmon_request_service_frontend"
-       id="main"
-       class="container"
-       ng-controller="Request_controller as request_controller">
-
+    <div ng-app="relmon_request_service_frontend"
+         id="main"
+         class="container"
+         ng-controller="Request_controller as request_controller">
       <!-- BEGIN new RelMon request part -->
-      <h1 ng-init="new_request_collapsed = true">New RelMon request (workflow)
-        <button class="btn btn-default btn-xs"
-              ng-click="new_request_collapsed = !new_request_collapsed">
-          Show/Hide
+      <div class="page-header" ng-init="new_request_collapsed = true">
+        <h1>RelMon service</h1>
+      </div>
+      <h2>New RelMon request (campaign)
+        <button class="btn btn-primary" type="button"
+                ng-click="new_request_collapsed = !new_request_collapsed">
+          <span ng-if="new_request_collapsed">New RelMon</span>
+          <span ng-if="!new_request_collapsed">Hide</span>
         </button>
-      </h1>
+      </h2>
       <form name="requests_form"
             ng-submit="request_controller.try_submit()"
             collapse="new_request_collapsed">
@@ -56,35 +58,36 @@
           </tab>
         </tabset>
         <hr />
-        <label class="text">Name:
-          <input type="text"
-                 id="name_field"
-                 ng-model="request_controller.new_request_name" />
-	</label>
-        <label>Threshold:
-          <input type="text" ng-model="request_controller.new_request_threshold" />
-	</label>
-        <input type="submit" class="btn btn-primary" />
+        <div class="row">
+          <label class="col-md-6">Name:
+            <input class="input-lg" type="text" style="width:100%"
+                   ng-model="request_controller.new_request_name" />
+	  </label>
+          <label class="col-md-4">Threshold:
+            <input type="text" class="input-lg" style="width:100%"
+                   ng-model="request_controller.new_request_threshold" />
+	  </label>
+          <input type="submit" class="btn btn-primary btn-lg col-md-2" />
+        </div>
       </form>
 <!-- END New RelMon request part -->
 
       <hr />
 
       <!-- BEGIN Latest requests part -->
-      <h1>Latest requests</h1>
-      
+      <h2>Latest requests</h2>
       <table class="table table-bordered row">
         <thead>
           <tr>
-            <th class="col-sm-3">Workflow</th>
-            <th class="col-sm-9">Samples</th>
+            <th class="col-xs-2">Workflow</th>
+            <th class="col-xs-10">Samples</th>
           </tr>
         </thead>
         <tbody>
           <tr ng-repeat="request in request_controller.relmon_requests">
             <td>
-              <ul class="list-group">
-                <li class="list-group-item">Id: {{request.id}}</li>
+              <ul  style="word-wrap: break-word; word-break: break-all;" class="list-group">
+                <li class="list-group-item">Id: {{request.id_}}</li>
                 <li class="list-group-item">Name:</br>{{request.name}}</li>
                 <li class="list-group-item">Status: 
                   <span ng-class="request.status=='failed' ? 'text-danger' : 'text-info'">
@@ -93,16 +96,16 @@
                 </li>
                 <li class="list-group-item">Threshold: {{request.threshold}}</li>
                 <li ng-if="request.log" class="list-group-item">
-                  <a  href="validation_logs/{{request.id}}.log">Log file</a>
+                  <a  href="validation_logs/{{request.id_}}.log">Log file</a>
                 </li>
                 <li class="list-group-item">
-                  <button ng-if="!request_controller.posting_terminator[request.id]"
+                  <button ng-if="!request_controller.posting_terminator[request.id_]"
                           class="btn btn-danger btn-xs"
                           ng-class="request.status=='terminating' ? 'disabled' : ''"
-                          ng-click="request_controller.post_terminate(request)">
+                          ng-click="request_controller.post_terminator(request)">
                     Terminate
                   </button>
-                  <progressbar ng-if="request_controller.posting_terminator[request.id]"
+                  <progressbar ng-if="request_controller.posting_terminator[request.id_]"
                                class="progress-striped active"
                                max="1" value="1"
                                type="danger">

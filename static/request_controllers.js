@@ -198,19 +198,19 @@ function Request_controller($http, $modal) {
         }
     };
 
-    this.post_terminate = function(relmon_request) {
+    this.post_terminator = function(relmon_request) {
         var modal_inst = this.open_confirm_modal(
             "Campaign " + relmon_request["name"] +
             " is going to be terminated.\nDo you want to proceed?")
         modal_inst.result.then(
             function() {
                 http_request_prepare();
-                me.posting_terminator[relmon_request["id"]] = true;
-                $http.post(SERVICE_ADDRESS + "/requests/" + relmon_request["id"] + "/terminate")
+                me.posting_terminator[relmon_request["id_"]] = true;
+                $http.post(SERVICE_ADDRESS + "/requests/" + relmon_request["id_"] + "/terminator")
                     .success(http_post_success)
                     .error(http_post_error)
                     .finally(function(){
-                        me.posting_terminator[relmon_request["id"]] = false;
+                        me.posting_terminator[relmon_request["id_"]] = false;
                         me.http_finally();
                     });
             }

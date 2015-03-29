@@ -8,7 +8,7 @@ import argparse
 import httplib
 import json
 import shutil
-from common import utils
+from common import utils, relmon
 
 # TODO: move hardcoded values to config file
 RELMON_PATH = (
@@ -17,25 +17,37 @@ SERVICE_HOST = "188.184.185.27"
 
 # parse arguments
 parser = argparse.ArgumentParser()
-parser.add_argument(dest="id", help="FIXME: id help")
+parser.add_argument(dest="id_", help="FIXME: id help")
 args = parser.parse_args()
 
 # get RelMon
-status, data = utils.httpget(SERVICE_HOST, "/requests/" + args.id)
+status, data = utils.httpget(SERVICE_HOST, "/requests/" + args.id_)
 if (status != httplib.OK):
     # FIXME: solve this problem
     exit(1)
-relmon_request = json.loads(data)
+request = relmon.RelmonRequest(**json.loads(data))
+
+
+def send_delete_terminator():
+    status, data = utils.http(
+        "DELETE",
+        SERVICE_HOST,
+        "/requests/" + str(request.id_) + "/terminator")
+    if (status != httplib.OK):
+        # FIXME: solve this problem
+        print("konkreciai juokutis")
 
 # do cleaning
-if (os.path.exists("requests/" + args.id)):
-    shutil.rmtree("requests/" + args.id)
-if (not os.path.exists(RELMON_PATH + relmon_request["name"] + '/')):
+if (os.path.exists("requests/" + str(request.id_))):
+    shutil.rmtree("requests/" + str(request.id_))
+if (not os.path.exists(RELMON_PATH + request.name + '/')):
+    send_delete_terminator()
+    # exit normally
     exit()
 all_categories_removed = True
-for category in relmon_request["categories"]:
+for category in request.categories:
     cat_report_path = (
-        RELMON_PATH + relmon_request["name"] + '/' + category["name"])
+        RELMON_PATH + request.name + '/' + category["name"])
     if (category["name"] == "Generator" or category["HLT"] != "only"):
         if (os.path.exists(cat_report_path)):
             if (len(category["lists"]["target"]) > 0):
@@ -50,4 +62,5 @@ for category in relmon_request["categories"]:
             else:
                 all_categories_removed = False
 if (all_categories_removed):
-    shutil.rmtree(RELMON_PATH + relmon_request["name"] + '/')
+    shutil.rmtree(RELMON_PATH + request.name + '/')
+send_delete_terminator()

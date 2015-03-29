@@ -1,25 +1,32 @@
 """
 Restful flask resources for relmon request service.
 """
-
+import os
+import traceback
+import controller
 from flask.ext.restful import Resource
-import time
 from flask import request
-from common import utils, relmon_shared
+from common import shared, relmon
+
+controllers = {}
+for relmon_request in shared.relmons.itervalues():
+    controllers[relmon_request.id_] = controller.Controller(relmon_request)
+    controllers[relmon_request.id_].start()
 
 
 def add_default_HTTP_returns(func):
+    """Decorate methods to add default HTTP responses"""
     def decorator(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except (TypeError, ValueError) as err:
-            print(err)
+        except (TypeError, ValueError):
+            traceback.print_exc()
             return "Bad request", 400
-        except IndexError as err:
-            print(err)
+        except IndexError:
+            traceback.print_exc()
             return "Not Found", 404
-        except Exception as ex:
-            print(ex)
+        except Exception:
+            traceback.print_exc()
             return "Internal error", 500
     return decorator
 
@@ -28,103 +35,82 @@ class Sample(Resource):
 
     @add_default_HTTP_returns
     def get(self, request_id, category, sample_list, sample_name):
-        relmon_request = [i for i in relmon_shared.data if
-                          i["id"] == request_id][0]
-        the_category = [i for i in relmon_request["categories"] if
+        relmon_request = shared.relmons[request_id]
+        the_category = [i for i in relmon_request.categories if
                         i["name"] == category][0]
         the_list = the_category["lists"][sample_list]
         return [i for i in the_list if i["name"] == sample_name][0], 200
 
     @add_default_HTTP_returns
     def put(self, request_id, category, sample_list, sample_name):
-        with relmon_shared.data_lock:
-            relmon_request = [i for i in relmon_shared.data if
-                              i["id"] == request_id][0]
-            the_category = [i for i in relmon_request["categories"] if
-                            i["name"] == category][0]
-            the_list = the_category["lists"][sample_list]
-            for sidx, sample in enumerate(the_list):
-                if (sample["name"] == sample_name):
+        relmon_request = shared.relmons[request_id]
+        the_category = [i for i in relmon_request.categories if
+                        i["name"] == category][0]
+        the_list = the_category["lists"][sample_list]
+        for sidx, sample in enumerate(the_list):
+            if (sample["name"] == sample_name):
+                relmon_request.get_access()
+                try:
                     the_list[sidx] = request.json
-                    break
-            frac_downloaded = utils.sample_fraction_by_status(
-                relmon_request,
-                status=["downloaded"],
-                ignore=["NoDQMIO", "NoROOT"])
-            if (relmon_request["status"] == "downloading" and
-                frac_downloaded * 100 >= relmon_request["threshold"]):
-                # then:
-                utils.start_reporter(request_id)
-                relmon_request["status"] = "comparing"
-            relmon_shared.write_data()
-            return "OK", 200
+                finally:
+                    relmon_request.release_access()
+                break
+        return "OK", 200
 
 
+# TODO: think of other ways to change status internally
 class RequestStatus(Resource):
 
     @add_default_HTTP_returns
     def put(self, request_id):
-        with relmon_shared.data_lock:
-            relmon_request = [i for i in relmon_shared.data if
-                              i["id"] == request_id][0]
-            # TODO: check new_status for validity
-            if (relmon_request["status"] not in ["terminating", "finished"]):
-                new_status = request.json["value"]
-                relmon_request["status"] = new_status
-                relmon_shared.write_data()
+        relmon_request = shared.relmons[request_id]
+        # TODO: check new_status for validity
+        relmon_request.get_access()
+        try:
+            if (relmon_request.status not in relmon.FINAL_RELMON_STATUSES):
+                relmon_request.status = request.json["value"]
                 return "OK", 200
+        finally:
+            relmon_request.release_access()
 
 
 class RequestLog(Resource):
 
     @add_default_HTTP_returns
     def put(self, request_id):
-        with relmon_shared.data_lock:
-            relmon_request = [i for i in relmon_shared.data if
-                              i["id"] == request_id][0]
-            # TODO: check new_status for validity
-            new_log_state = request.json["value"]
-            relmon_request["log"] = new_log_state
-            relmon_shared.write_data()
-            return "OK", 200
+        relmon_request = shared.relmons[request_id]
+        relmon_request.get_access()
+        try:
+            relmon_request.log = request.json["value"]
+        finally:
+            relmon_request.release_access()
+        return "OK", 200
 
 
 class Request(Resource):
 
     @add_default_HTTP_returns
     def get(self, request_id):
-        return [i for i in relmon_shared.data if
-                i["id"] == request_id][0], 200
+        return shared.relmons[request_id].to_dict(), 200
 
 
 class Requests(Resource):
 
     @add_default_HTTP_returns
     def get(self):
-        return relmon_shared.data, 200
+        requests = []
+        with shared.lock:
+            for relmon_request in shared.relmons.itervalues():
+                requests.append(relmon_request.to_dict())
+        return requests, 200
 
     @add_default_HTTP_returns
     def post(self):
-        args = request.json
-        new_record = {"id": int(time.time()),
-                      "name": args["name"],
-                      "status": "initial",
-                      "threshold": int(args["threshold"]),
-                      "log": False,
-                      "categories": []}
-        if (new_record["threshold"] < 0 or new_record["threshold"] > 100):
-            raise ValueError
-        for category in args["categories"]:
-            for list_idx, sample_list in category["lists"].iteritems():
-                for sample_idx, sample in enumerate(sample_list):
-                    tmp_sample = {"name": sample,
-                                  "status": "initial",
-                                  "wm_status": ""}
-                    sample_list[sample_idx] = tmp_sample
-            new_record["categories"].append(category)
-        with relmon_shared.data_lock:
-            relmon_shared.data.append(new_record)
-            relmon_shared.write_data()
+        relmon_request = relmon.RelmonRequest(**(request.json))
+        shared.new(relmon_request)
+        global controllers
+        controllers[relmon_request.id_] = controller.Controller(relmon_request)
+        controllers[relmon_request.id_].start()
         return "OK", 200
 
 
@@ -132,19 +118,23 @@ class Terminator(Resource):
     """Documentation for Terminator
 
     """
-    def __init__(self):
-        super(Terminator, self).__init__()
-
     @add_default_HTTP_returns
     def post(self, request_id):
-        relmon_shared.high_priority_q.put(self)
-        relmon_request = [i for i in relmon_shared.data if
-                          i["id"] == request_id][0]
-        if (utils.is_terminator_alive(request_id)):
+        relmon_request = shared.relmons[request_id]
+        relmon_request.get_priority_access()
+        if (relmon_request.status == "terminating"):
             return "Already terminating", 409
-        with relmon_shared.data_lock:
-            relmon_request["status"] = "terminating"
-        relmon_shared.high_priority_q.get()
-        relmon_shared.high_priority_q.task_done()
-        utils.start_terminator(request_id)
+        relmon_request.status = "terminating"
+        relmon_request.release_priority_access()
+        controllers[request_id].terminate()
+        return "OK", 200
+
+    def delete(self, request_id):
+        shared.relmons[request_id]
+        controllers.pop(request_id)
+        shared.drop(request_id)
+        if (os.path.exists("static/validation_logs/" +
+                           str(request_id) + ".log")):
+            os.remove("static/validation_logs/" +
+                      str(request_id) + ".log")
         return "OK", 200

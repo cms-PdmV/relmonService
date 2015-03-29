@@ -1,15 +1,9 @@
 """
 Helper functions for relmon request service.
 """
-
-import fractions
 import re
 import json
-import threading
-import relmon_shared
-import os
 import httplib
-import iters
 
 # TODO: move hardcoded values to config file
 
@@ -91,7 +85,7 @@ def httpsget_large_file(filepath,
     conn.close()
 
 
-def httpp(method, host, url, data, port=80):
+def http(method, host, url, data=None, port=80):
     conn = httplib.HTTPConnection(host, port)
     conn.connect()
     headers = {"Content-type": "application/json"}
@@ -119,6 +113,8 @@ def get_workload_manager_status(sample_name):
         return None
     try:
         data = json.loads(data)
+        # FIXME: take status with most reecent 'update-time', instead
+        # of taking last element
         wm_status = (
             data["rows"][0]["doc"]["request_status"][-1]["status"])
         return wm_status
@@ -127,9 +123,11 @@ def get_workload_manager_status(sample_name):
         return None
 
 
-# str:CMSSW -- version . E.g. "CMSSW_7_2_"
-# bool:MC -- True -> Monte Carlo, False -> data
 def get_ROOT_file_urls(CMSSW, category_name):
+    """
+    str:CMSSW -- version . E.g. "CMSSW_7_2_"
+    bool:MC -- True -> Monte Carlo, False -> data
+    """
     url = DQM_ROOT_URL
     if (category_name == "Data"):
         url += "RelValData/"
@@ -151,10 +149,11 @@ def get_ROOT_file_urls(CMSSW, category_name):
     return hyperlinks
 
 
-# Given sample name returns DQMIO dataset status. If given sample
-# produces DQMIO dataset then the second object of the returned
-# tuple is the name of that DQMIO dataset
 def get_DQMIO_status(sample_name):
+    """Given sample name returns DQMIO dataset status. If given sample
+    produces DQMIO dataset then the second object of the returned
+    tuple is the name of that DQMIO dataset
+    """
     status, data = httpsget(host=CMSWEB_HOST,
                             url=DATATIER_CHECK_URL + sample_name)
     # TODO: handle request failure
@@ -194,119 +193,119 @@ def get_ROOT_name_part(DQMIO_string):
         return DS + "__" + CMSSW + '-' + PS + '-'
 
 
-def sample_fraction_by_status(relmon_request, status, ignore=None):
-    not_ignored = 0
-    with_status = 0
-    for sample in iters.samples(
-            relmon_request["categories"],
-            only_statuses=None,
-            skip_statuses=ignore):
-        if (sample["status"] in status):
-            with_status += 1
-        not_ignored += 1
-    if (not_ignored == 0):
-        return fractions.Fraction(0)
-    return fractions.Fraction(with_status, not_ignored)
+# def sample_fraction_by_status(relmon_request, status, ignore=None):
+#     not_ignored = 0
+#     with_status = 0
+#     for sample in iters.samples(
+#             relmon_request["categories"],
+#             only_statuses=None,
+#             skip_statuses=ignore):
+#         if (sample["status"] in status):
+#             with_status += 1
+#         not_ignored += 1
+#     if (not_ignored == 0):
+#         return fractions.Fraction(0)
+#     return fractions.Fraction(with_status, not_ignored)
 
 
-# NOTE: exec_command is non blocking, it is probably not needed to
-# wrap it in another thread - SSHThread
-class SSHThread(threading.Thread):
-    def __init__(self, command):
-        import paramiko
-        threading.Thread.__init__(self)
-        self.command = command
-        self.ssh_client = paramiko.SSHClient()
-        self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+# # NOTE: exec_command is non blocking, it is probably not needed to
+# # wrap it in another thread - SSHThread
+# class SSHThread(threading.Thread):
+#     def __init__(self, command):
+#         import paramiko
+#         threading.Thread.__init__(self)
+#         self.command = command
+#         self.ssh_client = paramiko.SSHClient()
+#         self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-    def run(self):
-        print("SSHThread")
-        print(self.command)
-        self.ssh_client.connect(REMOTE_HOST,
-                                username=credentials["user"],
-                                password=credentials["pass"])
-        (stdin, stdout, stderr) = self.ssh_client.exec_command(self.command)
-        print(stdout.readlines())
-        print(stderr.readlines())
-        self.ssh_client.close()
+#     def run(self):
+#         print("SSHThread")
+#         print(self.command)
+#         self.ssh_client.connect(REMOTE_HOST,
+#                                 username=credentials["user"],
+#                                 password=credentials["pass"])
+#         (stdin, stdout, stderr) = self.ssh_client.exec_command(self.command)
+#         print(stdout.readlines())
+#         print(stderr.readlines())
+#         self.ssh_client.close()
 
-    def stopSSH(self):
-        self.ssh_client.close()
-
-
-class TerminatorThread(threading.Thread):
-    """Documentation for TerminatorThread
-    """
-    def __init__(self, request_id):
-        super(TerminatorThread, self).__init__()
-        self.request_id = request_id
-
-    def _remove_from_data(self):
-        with relmon_shared.data_lock:
-            for i in xrange(len(relmon_shared.data)):
-                if relmon_shared.data[i]["id"] == self.request_id:
-                    relmon_shared.data.pop(i)
-                    break
-            relmon_shared.write_data()
-
-    def run(self):
-        if (is_downloader_alive(self.request_id)):
-            downloader = relmon_shared.downloaders[self.request_id]
-            downloader.stopSSH()
-            downloader.join()
-        if (is_reporter_alive(self.request_id)):
-            reporter = relmon_shared.reporters[self.request_id]
-            reporter.stopSSH()
-            reporter.join()
-        cleaner = SSHThread(CLEANER_CMD + str(self.request_id))
-        cleaner.start()
-        cleaner.join()
-        if (os.path.exists("static/validation_logs/" +
-                           str(self.request_id) + ".log")):
-            os.remove("static/validation_logs/" +
-                      str(self.request_id) + ".log")
-        self._remove_from_data()
+#     def stopSSH(self):
+#         self.ssh_client.close()
 
 
-def is_downloader_alive(request_id):
-    return (request_id in relmon_shared.downloaders and
-            relmon_shared.downloaders[request_id].isAlive())
+# class TerminatorThread(threading.Thread):
+#     """Documentation for TerminatorThread
+#     """
+#     def __init__(self, request_id):
+#         super(TerminatorThread, self).__init__()
+#         self.request_id = request_id
+
+#     def _remove_from_data(self):
+#         with relmon_shared.data_lock:
+#             for i in xrange(len(relmon_shared.data)):
+#                 if relmon_shared.data[i]["id"] == self.request_id:
+#                     relmon_shared.data.pop(i)
+#                     break
+#             relmon_shared.write_data()
+
+#     def run(self):
+#         if (is_downloader_alive(self.request_id)):
+#             downloader = relmon_shared.downloaders[self.request_id]
+#             downloader.stopSSH()
+#             downloader.join()
+#         if (is_reporter_alive(self.request_id)):
+#             reporter = relmon_shared.reporters[self.request_id]
+#             reporter.stopSSH()
+#             reporter.join()
+#         cleaner = SSHThread(CLEANER_CMD + str(self.request_id))
+#         cleaner.start()
+#         cleaner.join()
+#         if (os.path.exists("static/validation_logs/" +
+#                            str(self.request_id) + ".log")):
+#             os.remove("static/validation_logs/" +
+#                       str(self.request_id) + ".log")
+#         self._remove_from_data()
 
 
-def is_reporter_alive(request_id):
-    return (request_id in relmon_shared.reporters and
-            relmon_shared.reporters[request_id].isAlive())
+# def is_downloader_alive(request_id):
+#     return (request_id in relmon_shared.downloaders and
+#             relmon_shared.downloaders[request_id].isAlive())
 
 
-def is_terminator_alive(request_id):
-    return (request_id in relmon_shared.terminators and
-            relmon_shared.terminators[request_id].isAlive())
+# def is_reporter_alive(request_id):
+#     return (request_id in relmon_shared.reporters and
+#             relmon_shared.reporters[request_id].isAlive())
 
 
-def start_downloader(request_id):
-    if (is_downloader_alive(request_id)):
-        return None
-    downloader = SSHThread(
-        DOWNLOADER_CMD + str(request_id))
-    relmon_shared.downloaders[request_id] = downloader
-    downloader.start()
-    return downloader
+# def is_terminator_alive(request_id):
+#     return (request_id in relmon_shared.terminators and
+#             relmon_shared.terminators[request_id].isAlive())
 
 
-def start_reporter(request_id):
-    if (is_reporter_alive(request_id)):
-        return None
-    reporter = SSHThread(
-        REPORT_GENERATOR_CMD + str(request_id))
-    relmon_shared.reporters[request_id] = reporter
-    reporter.start()
-    return reporter
+# def start_downloader(request_id):
+#     if (is_downloader_alive(request_id)):
+#         return None
+#     downloader = SSHThread(
+#         DOWNLOADER_CMD + str(request_id))
+#     relmon_shared.downloaders[request_id] = downloader
+#     downloader.start()
+#     return downloader
 
 
-def start_terminator(request_id):
-    if (is_terminator_alive(request_id)):
-        return None
-    terminator = TerminatorThread(request_id)
-    relmon_shared.terminators[request_id] = terminator
-    terminator.start()
-    return terminator
+# def start_reporter(request_id):
+#     if (is_reporter_alive(request_id)):
+#         return None
+#     reporter = SSHThread(
+#         REPORT_GENERATOR_CMD + str(request_id))
+#     relmon_shared.reporters[request_id] = reporter
+#     reporter.start()
+#     return reporter
+
+
+# def start_terminator(request_id):
+#     if (is_terminator_alive(request_id)):
+#         return None
+#     terminator = TerminatorThread(request_id)
+#     relmon_shared.terminators[request_id] = terminator
+#     terminator.start()
+#     return terminator
