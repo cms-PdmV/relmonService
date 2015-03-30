@@ -175,7 +175,7 @@ function Request_controller($http, $modal) {
 
     this.get_requests = function() {
         http_request_prepare();
-        $http.get("requests")
+        $http.get(SERVICE_ADDRESS + "/requests")
             .success(http_get_success)
             .error(http_get_error)
             .finally(http_finally);

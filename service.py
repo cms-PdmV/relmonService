@@ -3,9 +3,11 @@ Relmon request service. Automating relmon reports production.
 """
 from flask import Flask
 from flask.ext.restful import Api
+from flask.ext.cors import CORS
 from resources import resources
 
 app = Flask(__name__, static_url_path="")
+cors = CORS(app)
 api = Api(app)
 api.add_resource(resources.Requests,
                  "/requests",
