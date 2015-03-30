@@ -5,19 +5,18 @@ from common import relmon
 import os
 import threading
 import json
-
-DATA_FILE_NAME = "data"
+import config as CONFIG
 
 lock = threading.RLock()
 relmon_data = []
 relmons = {}
 
 
-if not os.path.isfile(DATA_FILE_NAME):
-    with open(DATA_FILE_NAME, 'w') as new_file:
+if not os.path.isfile(CONFIG.DATA_FILE_NAME):
+    with open(CONFIG.DATA_FILE_NAME, 'w') as new_file:
         new_file.write("[]")
 else:
-    with open(DATA_FILE_NAME) as json_file:
+    with open(CONFIG.DATA_FILE_NAME) as json_file:
         relmon_data = json.load(json_file)
         for request_json in relmon_data:
             request = relmon.RelmonRequest(**request_json)
@@ -54,5 +53,5 @@ def drop(request_id):
 
 
 def _write():
-    with open(DATA_FILE_NAME, 'w') as json_file:
+    with open(CONFIG.DATA_FILE_NAME, 'w') as json_file:
         json_file.write(json.dumps(relmon_data, indent=4))

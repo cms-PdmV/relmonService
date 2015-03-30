@@ -4,6 +4,7 @@ Restful flask resources for relmon request service.
 import os
 import traceback
 import controller
+import config as CONFIG
 from flask.ext.restful import Resource
 from flask import request
 from common import shared, relmon
@@ -67,7 +68,7 @@ class RequestStatus(Resource):
         # TODO: check new_status for validity
         relmon_request.get_access()
         try:
-            if (relmon_request.status not in relmon.FINAL_RELMON_STATUSES):
+            if (relmon_request.status not in CONFIG.FINAL_RELMON_STATUSES):
                 relmon_request.status = request.json["value"]
                 return "OK", 200
         finally:

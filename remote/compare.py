@@ -11,21 +11,11 @@ import httplib
 import subprocess
 import shutil
 from common import utils, relmon
-
-# TODO: move hardcoded values to config file
-CERTIFICATE_PATH = "/afs/cern.ch/user/j/jdaugala/.globus/usercert.pem"
-KEY_PATH = "/afs/cern.ch/user/j/jdaugala/.globus/userkey.pem"
-LOG_DIR_AT_SERVICE = (
-    "/home/relmon/relmon_request_service/static/validation_logs/")
-SERVICE_HOST = "188.184.185.27"
-CREDENTIALS_PATH = "/afs/cern.ch/user/j/jdaugala/private/credentials"
-USER = "jdaugala"
-RELMON_PATH = (
-    "/afs/cern.ch/cms/offline/dqm/ReleaseMonitoring-TEST/jdaugalaSandbox/")
+import config as CONFIG
 
 # read credentials
 credentials = {}
-with open(CREDENTIALS_PATH) as cred_file:
+with open(CONFIG.CREDENTIALS_PATH) as cred_file:
     credentials = json.load(cred_file)
 
 # parse args
@@ -35,7 +25,7 @@ parser.add_argument(dest="id_", help="FIXME: id help")
 args = parser.parse_args()
 
 # get RelMon
-status, data = utils.httpget(SERVICE_HOST,
+status, data = utils.httpget(CONFIG.SERVICE_HOST,
                              "/requests/" + str(args.id_))
 if (status != httplib.OK):
     # FIXME: solve this problem
@@ -53,7 +43,7 @@ local_reports = local_relmon_request + "/reports/"
 logFile = open(str(request.id_) + ".log", "w")
 os.chmod(str(request.id_) + ".log", 0664)
 
-remote_reports = RELMON_PATH + request.name + '/'
+remote_reports = CONFIG.RELMON_PATH + '/' + request.name + '/'
 
 
 def upload_log():
@@ -61,14 +51,15 @@ def upload_log():
     scp_proc = subprocess.Popen(
         ["scp", "-p",
          logFile.name,
-         USER + "@" + SERVICE_HOST + ":" + LOG_DIR_AT_SERVICE])
+         CONFIG.USER + "@" + CONFIG.SERVICE_HOST + ":" +
+         CONFIG.LOG_DIR_AT_SERVICE + '/'])
     scp_proc_return = scp_proc.wait()
     if (scp_proc_return != 0):
         # TODO: something more useful
         print("scp fail")
     status, data = utils.http(
         "PUT",
-        SERVICE_HOST,
+        CONFIG.SERVICE_HOST,
         "/requests/" + str(request.id_) + "/log",
         data=json.dumps({"value": True}))
     if (status != httplib.OK):
@@ -81,7 +72,7 @@ def put_status(status):
     global logFile, request
     status, data = utils.http(
         "PUT",
-        SERVICE_HOST,
+        CONFIG.SERVICE_HOST,
         "/requests/" + str(request.id_) + "/status",
         data=json.dumps({"value": status}))
     if (status != httplib.OK):

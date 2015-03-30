@@ -5,25 +5,11 @@ import Queue
 import threading
 import time
 import json
-
-IGNORE_NOROOT_WORKFLOWS = True
-FINAL_WM_STATUSES = ["rejected", "rejected-archived",
-                     "aborted-completed", "aborted-archived", "announced",
-                     "normal-archived"]
-FINAL_RELMON_STATUSES = ["failed", "terminating", "finished"]
-REMOTE_HOST = "cmsdev04.cern.ch"
-CREDENTIALS_PATH = "/afs/cern.ch/user/j/jdaugala/private/credentials"
-REMOTE_WORK_DIR = "/build/jdaugala/relmon"
-CMD_DOWNLOADER = "cd " + REMOTE_WORK_DIR + "; ./download_DQM_ROOT.py "
-CMD_REPORTER = ("cd /build/jdaugala/CMSSW_7_4_0_pre8\n"
-                " eval `scramv1 runtime -sh`\n"
-                "cd " + REMOTE_WORK_DIR +
-                "\n ./compare.py ")
-CMD_CLEANER = "cd " + REMOTE_WORK_DIR + "; ./clean.py "
+import config as CONFIG
 
 credentials = {}
 # TODO: handle failures
-with open(CREDENTIALS_PATH) as cred_file:
+with open(CONFIG.CREDENTIALS_PATH) as cred_file:
     credentials = json.load(cred_file)
 
 
@@ -227,7 +213,9 @@ class StatusUpdater(Worker):
                 # FIXME: temporary solution
                 self.request.get_access()
                 sample_list[0]["status"] = "failed"
-                if (self.request.status not in FINAL_RELMON_STATUSES):
+                if (self.request.status not in
+                    CONFIG.FINAL_RELMON_STATUSES):
+                    # then:
                     self.request.status = "failed"
                 self.request.release_access()
                 # TODO: clean up
@@ -245,8 +233,8 @@ class StatusUpdater(Worker):
                     len(matches) == sample["run_count"]):
                     # then:
                     sample["status"] = "ROOT"
-                elif (IGNORE_NOROOT_WORKFLOWS and
-                      sample["wm_status"] in FINAL_WM_STATUSES):
+                elif (CONFIG.IGNORE_NOROOT_WORKFLOWS and
+                      sample["wm_status"] in CONFIG.FINAL_WM_STATUSES):
                     sample["status"] = "NoROOT"
                 self.request.release_access()
 
@@ -263,7 +251,7 @@ class SSHWorker(Worker):
         self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
     def run(self):
-        self.ssh_client.connect(REMOTE_HOST,
+        self.ssh_client.connect(CONFIG.REMOTE_HOST,
                                 username=credentials["user"],
                                 password=credentials["pass"])
         (stdin, stdout, stderr) = self.ssh_client.exec_command(self.command)
@@ -280,7 +268,9 @@ class Downloader(SSHWorker):
 
     """
     def __init__(self, request):
-        super(Downloader, self).__init__(CMD_DOWNLOADER + str(request.id_))
+        super(Downloader, self).__init__(
+            "cd " + CONFIG.REMOTE_WORK_DIR + "/;" +
+            "./download_DQM_ROOT.py " + str(request.id_))
 
 
 class Reporter(SSHWorker):
@@ -288,7 +278,11 @@ class Reporter(SSHWorker):
 
     """
     def __init__(self, request):
-        super(Reporter, self).__init__(CMD_REPORTER + str(request.id_))
+        super(Reporter, self).__init__(
+            "cd " + CONFIG.REMOTE_CMSSW_DIR + '/;' +
+            " eval `scramv1 runtime -sh`" +
+            "cd " + CONFIG.REMOTE_WORK_DIR + "/;" +
+            "./compare.py " + str(request.id_))
 
 
 class Cleaner(SSHWorker):
@@ -296,4 +290,6 @@ class Cleaner(SSHWorker):
 
     """
     def __init__(self, request):
-        super(Cleaner, self).__init__(CMD_CLEANER + str(request.id_))
+        super(Cleaner, self).__init__(
+            "cd " + CONFIG.REMOTE_WORK_DIR + "/;" +
+            "./clean.py " + str(request.id_))

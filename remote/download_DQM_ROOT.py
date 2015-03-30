@@ -8,12 +8,7 @@ import argparse
 import httplib
 import json
 from common import utils, relmon
-
-# TODO: move hardcoded values to config file
-CERTIFICATE_PATH = "/afs/cern.ch/user/j/jdaugala/.globus/usercert.pem"
-KEY_PATH = "/afs/cern.ch/user/j/jdaugala/.globus/userkey.pem"
-SERVICE_HOST = "188.184.185.27"
-CMSWEB_HOST = "cmsweb.cern.ch"
+import config as CONFIG
 
 parser = argparse.ArgumentParser()
 parser.add_argument(dest="id_", help="FIXME: id help")
@@ -21,7 +16,8 @@ parser.add_argument(dest="id_", help="FIXME: id help")
 # parser.add_argument("--dry", dest="dry", action="store_true", default=False)
 args = parser.parse_args()
 
-status, data = utils.httpget(SERVICE_HOST, "/requests/" + str(args.id_))
+status, data = utils.httpget(
+    CONFIG.SERVICE_HOST, "/requests/" + str(args.id_))
 print(status)
 print(data)
 if (status != httplib.OK):
@@ -67,7 +63,7 @@ for category in request.categories:
                     continue
                 # TODO: handle failures (httpsget_large_file)
                 utils.httpsget_large_file(file_url.split("/")[-1],
-                                          CMSWEB_HOST,
+                                          CONFIG.CMSWEB_HOST,
                                           file_url)
                 file_count += 1
 
@@ -83,7 +79,7 @@ for category in request.categories:
                 # TODO: handle failures (request)
                 status, data = utils.http(
                     "PUT",
-                    SERVICE_HOST,
+                    CONFIG.SERVICE_HOST,
                     ("/requests/" + str(request.id_) + "/categories/" +
                      category["name"] + "/lists/" + lname + "/samples/" +
                      sample["name"]),

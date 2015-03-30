@@ -9,11 +9,7 @@ import httplib
 import json
 import shutil
 from common import utils, relmon
-
-# TODO: move hardcoded values to config file
-RELMON_PATH = (
-    "/afs/cern.ch/cms/offline/dqm/ReleaseMonitoring-TEST/jdaugalaSandbox/")
-SERVICE_HOST = "188.184.185.27"
+import config as CONFIG
 
 # parse arguments
 parser = argparse.ArgumentParser()
@@ -21,7 +17,7 @@ parser.add_argument(dest="id_", help="FIXME: id help")
 args = parser.parse_args()
 
 # get RelMon
-status, data = utils.httpget(SERVICE_HOST, "/requests/" + args.id_)
+status, data = utils.httpget(CONFIG.SERVICE_HOST, "/requests/" + args.id_)
 if (status != httplib.OK):
     # FIXME: solve this problem
     exit(1)
@@ -31,7 +27,7 @@ request = relmon.RelmonRequest(**json.loads(data))
 def send_delete_terminator():
     status, data = utils.http(
         "DELETE",
-        SERVICE_HOST,
+        CONFIG.SERVICE_HOST,
         "/requests/" + str(request.id_) + "/terminator")
     if (status != httplib.OK):
         # FIXME: solve this problem
@@ -40,14 +36,14 @@ def send_delete_terminator():
 # do cleaning
 if (os.path.exists("requests/" + str(request.id_))):
     shutil.rmtree("requests/" + str(request.id_))
-if (not os.path.exists(RELMON_PATH + request.name + '/')):
+if (not os.path.exists(CONFIG.RELMON_PATH + '/' + request.name + '/')):
     send_delete_terminator()
     # exit normally
     exit()
 all_categories_removed = True
 for category in request.categories:
     cat_report_path = (
-        RELMON_PATH + request.name + '/' + category["name"])
+        CONFIG.RELMON_PATH + '/' + request.name + '/' + category["name"])
     if (category["name"] == "Generator" or category["HLT"] != "only"):
         if (os.path.exists(cat_report_path)):
             if (len(category["lists"]["target"]) > 0):
@@ -62,5 +58,5 @@ for category in request.categories:
             else:
                 all_categories_removed = False
 if (all_categories_removed):
-    shutil.rmtree(RELMON_PATH + request.name + '/')
+    shutil.rmtree(CONFIG.RELMON_PATH + '/' + request.name + '/')
 send_delete_terminator()

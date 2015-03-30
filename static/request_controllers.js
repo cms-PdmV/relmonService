@@ -10,14 +10,14 @@ var relmon_request_service_frontend = angular.module(
 
 relmon_request_service_frontend.controller(
     "Request_controller",
-    ["$http", "$modal", Request_controller]
+    ["$http", "$modal", "$location", Request_controller]
 );
 
 function Request_controller_exception(message) {
     this.message = message;
 }
 
-function Request_controller($http, $modal) {
+function Request_controller($http, $modal, $location) {
 
 // public properties
     this.sample_inputs = [];
@@ -134,7 +134,7 @@ function Request_controller($http, $modal) {
 
     function submit_request(post_data) {
         http_request_prepare();
-        $http.post(SERVICE_ADDRESS + "/requests",
+        $http.post("http://" + $location.host() + "/requests",
                    post_data)
             .success(http_post_success)
             .error(http_post_error)
@@ -175,7 +175,7 @@ function Request_controller($http, $modal) {
 
     this.get_requests = function() {
         http_request_prepare();
-        $http.get(SERVICE_ADDRESS + "/requests")
+        $http.get("http://" + $location.host() + "/requests")
             .success(http_get_success)
             .error(http_get_error)
             .finally(http_finally);
@@ -206,7 +206,7 @@ function Request_controller($http, $modal) {
             function() {
                 http_request_prepare();
                 me.posting_terminator[relmon_request["id_"]] = true;
-                $http.post(SERVICE_ADDRESS + "/requests/" + relmon_request["id_"] + "/terminator")
+                $http.post("http://" + $location.host() + "/requests/" + relmon_request["id_"] + "/terminator")
                     .success(http_post_success)
                     .error(http_post_error)
                     .finally(function(){

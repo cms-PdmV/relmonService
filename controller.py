@@ -1,10 +1,7 @@
 import time
 import threading
 from common import relmon, shared
-
-TIME_AFTER_THRESHOLD_REACHED = 1
-TIME_BETWEEN_STATUS_UPDATES = 180
-TIME_BETWEEN_DOWNLOADS = 600
+import config as CONFIG
 
 # worker enums
 WORKER_UPDATER = 1
@@ -45,16 +42,16 @@ class Controller(threading.Thread):
                     self._clean()
                 return
             shared.update(self.request.id_)
-            if (self.request.status in relmon.FINAL_RELMON_STATUSES):
+            if (self.request.status in CONFIG.FINAL_RELMON_STATUSES):
                 return
             if (self.request.is_download_ready()):
                 # print("download ready")
                 break
             else:
-                time.sleep(TIME_BETWEEN_STATUS_UPDATES)
+                time.sleep(CONFIG.TIME_BETWEEN_STATUS_UPDATES)
         if (waiting and not self.request.is_ROOT_100()):
             # print("not root 100")
-            time.sleep(TIME_AFTER_THRESHOLD_REACHED)
+            time.sleep(CONFIG.TIME_AFTER_THRESHOLD_REACHED)
             self._start_worker(WORKER_UPDATER)
             self.worker.join()
             if (self._stop):
@@ -82,11 +79,11 @@ class Controller(threading.Thread):
                     self._clean()
                 return
             shared.update(self.request.id_)
-            if (self.request.status in relmon.FINAL_RELMON_STATUSES):
+            if (self.request.status in CONFIG.FINAL_RELMON_STATUSES):
                 return
             if (self.request.has_ROOT()):
                 # print("has root")
-                time.sleep(TIME_BETWEEN_DOWNLOADS)
+                time.sleep(CONFIG.TIME_BETWEEN_DOWNLOADS)
             else:
                 break
         # --- end of download

@@ -4,29 +4,13 @@ Helper functions for relmon request service.
 import re
 import json
 import httplib
+import config as CONFIG
 
-# TODO: move hardcoded values to config file
-
-CMSWEB_HOST = "cmsweb.cern.ch"
-DQM_ROOT_URL = "/dqm/relval/data/browse/ROOT/"
-DATATIER_CHECK_URL = "/reqmgr/reqMgr/outputDatasetsByRequestName/"
-DATASET_RUNS_URL = "/dbs/prod/global/DBSReader/runs?dataset="
 HYPERLINK_REGEX = re.compile(r"href=['\"]([-./\w]*)['\"]")
-CERTIFICATE_PATH = "/afs/cern.ch/user/j/jdaugala/.globus/usercert.pem"
-KEY_PATH = "/afs/cern.ch/user/j/jdaugala/.globus/userkey.pem"
-CREDENTIALS_PATH = "/afs/cern.ch/user/j/jdaugala/private/credentials"
-REMOTE_WORK_DIR = "/build/jdaugala/relmon"
-REMOTE_HOST = "cmsdev04.cern.ch"
-DOWNLOADER_CMD = "cd " + REMOTE_WORK_DIR + "; ./download_DQM_ROOT.py "
-REPORT_GENERATOR_CMD = ("cd /build/jdaugala/CMSSW_7_4_0_pre8\n"
-                        " eval `scramv1 runtime -sh`\n"
-                        "cd " + REMOTE_WORK_DIR +
-                        "\n ./compare.py ")
-CLEANER_CMD = "cd " + REMOTE_WORK_DIR + "; ./clean.py "
 
 credentials = {}
 # TODO: handle failures
-with open(CREDENTIALS_PATH) as cred_file:
+with open(CONFIG.CREDENTIALS_PATH) as cred_file:
     credentials = json.load(cred_file)
 
 
@@ -44,8 +28,8 @@ def httpget(host, url, port=80):
 def httpsget(host,
              url,
              port=443,
-             certpath=CERTIFICATE_PATH,
-             keypath=KEY_PATH,
+             certpath=CONFIG.CERTIFICATE_PATH,
+             keypath=CONFIG.KEY_PATH,
              password=None):
     conn = httplib.HTTPSConnection(host=host,
                                    port=port,
@@ -64,8 +48,8 @@ def httpsget_large_file(filepath,
                         host,
                         url,
                         port=443,
-                        certpath=CERTIFICATE_PATH,
-                        keypath=KEY_PATH,
+                        certpath=CONFIG.CERTIFICATE_PATH,
+                        keypath=CONFIG.KEY_PATH,
                         password=None):
     conn = httplib.HTTPSConnection(host=host,
                                    port=port,
@@ -103,10 +87,10 @@ def http(method, host, url, data=None, port=80):
 # given workflow name, returns workflow status from Workload
 # Management database 'wmstats'
 def get_workload_manager_status(sample_name):
-    url = "/couchdb/wmstats/_all_docs?keys=%5B%22"
+    url = CONFIG.WMSTATS_URL + "/_all_docs?keys=%5B%22"
     url += sample_name
     url += "%22%5D&include_docs=true"
-    status, data = httpsget(host=CMSWEB_HOST,
+    status, data = httpsget(host=CONFIG.CMSWEB_HOST,
                             url=url)
     # TODO: handle failures
     if (status != httplib.OK):
@@ -128,17 +112,17 @@ def get_ROOT_file_urls(CMSSW, category_name):
     str:CMSSW -- version . E.g. "CMSSW_7_2_"
     bool:MC -- True -> Monte Carlo, False -> data
     """
-    url = DQM_ROOT_URL
+    url = CONFIG.DQM_ROOT_URL
     if (category_name == "Data"):
-        url += "RelValData/"
+        url += "/RelValData/"
     else:
-        url += "RelVal/"
+        url += "/RelVal/"
     CMSSW = re.search("CMSSW_\d_\d_", CMSSW)
     # TODO: handle this error
     if (CMSSW is None):
         return None
     url += CMSSW.group() + "x/"
-    status, data = httpsget(host=CMSWEB_HOST,
+    status, data = httpsget(host=CONFIG.CMSWEB_HOST,
                             url=url)
     # TODO: handle failure
     if (status != httplib.OK):
@@ -154,8 +138,8 @@ def get_DQMIO_status(sample_name):
     produces DQMIO dataset then the second object of the returned
     tuple is the name of that DQMIO dataset
     """
-    status, data = httpsget(host=CMSWEB_HOST,
-                            url=DATATIER_CHECK_URL + sample_name)
+    status, data = httpsget(host=CONFIG.CMSWEB_HOST,
+                            url=CONFIG.DATATIER_CHECK_URL + '/' + sample_name)
     # TODO: handle request failure
     if (status == httplib.OK):
         if ("DQMIO" in data):
@@ -171,8 +155,9 @@ def get_DQMIO_status(sample_name):
 def get_run_count(DQMIO_string):
     if (not DQMIO_string):
         return None
-    status, data = httpsget(host=CMSWEB_HOST,
-                            url=DATASET_RUNS_URL + DQMIO_string)
+    status, data = httpsget(
+        host=CONFIG.CMSWEB_HOST,
+        url=CONFIG.DBSREADER_URL + "/runs?dataset=" + DQMIO_string)
     # TODO: handle request failure
     if (status != httplib.OK):
         return None
