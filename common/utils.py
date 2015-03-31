@@ -1,10 +1,19 @@
-"""
-Helper functions for relmon request service.
-"""
+"""Helper functions for relmon request service."""
+
+import stat
+import sys
+import os
 import re
 import json
 import httplib
+
+try:
+    import paramiko
+except ImportError:
+    pass
+
 import config as CONFIG
+
 
 HYPERLINK_REGEX = re.compile(r"href=['\"]([-./\w]*)['\"]")
 
@@ -12,6 +21,52 @@ credentials = {}
 # TODO: handle failures
 with open(CONFIG.CREDENTIALS_PATH) as cred_file:
     credentials = json.load(cred_file)
+
+
+def prepare_remote():
+    local_main_path = os.path.dirname(
+        os.path.abspath(sys.modules['__main__'].__file__))
+    transport = paramiko.Transport((CONFIG.REMOTE_HOST, 22))
+    transport.connect(username=credentials["user"],
+                      password=credentials["pass"])
+    sftp = paramiko.SFTPClient.from_transport(transport)
+    # remove files on remote maschine
+    for fattr in sftp.listdir_attr(CONFIG.REMOTE_WORK_DIR):
+        if (stat.S_ISREG(fattr.st_mode)):
+            try:
+                sftp.remove(os.path.join(CONFIG.REMOTE_WORK_DIR,
+                                         fattr.filename))
+            except IOError:
+                pass
+
+    try:
+        sftp.mkdir(os.path.join(CONFIG.REMOTE_WORK_DIR, "common"))
+    except IOError:
+        pass
+
+    for fattr in sftp.listdir_attr(
+            os.path.join(CONFIG.REMOTE_WORK_DIR, "common")):
+        if (stat.S_ISREG(fattr.st_mode)):
+            try:
+                sftp.remove(os.path.join(
+                    CONFIG.REMOTE_WORK_DIR, "common", fattr.filename))
+            except IOError:
+                pass
+
+    # put files on remote maschine
+    sftp.put(os.path.join(local_main_path, "config.py"),
+             os.path.join(CONFIG.REMOTE_WORK_DIR, "config.py"))
+
+    for fname in os.listdir(os.path.join(local_main_path, "remote")):
+        sftp.put(os.path.join(local_main_path, "remote", fname),
+                 os.path.join(CONFIG.REMOTE_WORK_DIR, fname))
+        sftp.chmod(os.path.join(CONFIG.REMOTE_WORK_DIR, fname), 0775)
+
+    for fname in os.listdir(os.path.join(local_main_path, "common")):
+        sftp.put(os.path.join(local_main_path, "common", fname),
+                 os.path.join(CONFIG.REMOTE_WORK_DIR, "common", fname))
+    sftp.close()
+    transport.close()
 
 
 def httpget(host, url, port=80):

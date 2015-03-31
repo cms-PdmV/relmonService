@@ -1,15 +1,15 @@
 #!/usr/bin/env python
-"""
-Script for cleaning RelMon report generation products
-"""
+"""Script for cleaning RelMon report generation products"""
 
 import os
 import argparse
 import httplib
 import json
 import shutil
-from common import utils, relmon
+
 import config as CONFIG
+from common import utils, relmon
+
 
 # parse arguments
 parser = argparse.ArgumentParser()

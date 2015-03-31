@@ -2,8 +2,11 @@ SERVICE_HOST = "188.184.185.27"
 SERVICE_PORT = 80
 REMOTE_WORK_DIR = "/build/jdaugala/relmon"
 USER = "jdaugala"
+REMOTE_USER = "jdaugala"
 IGNORE_NOROOT_WORKFLOWS = True
 DATA_FILE_NAME = "data"
+POJECT_FILES_ONILINE_URL = (
+    "https://raw.githubusercontent.com/cms-PdmV/relmonService/master")
 LOG_DIR_AT_SERVICE = (
     "/home/relmon/relmon_request_service/static/validation_logs")
 RELMON_PATH = (

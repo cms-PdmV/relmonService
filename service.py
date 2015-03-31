@@ -1,9 +1,9 @@
-"""
-Relmon request service. Automating relmon reports production.
-"""
+"""Relmon request service. Automating relmon reports production."""
+
 from flask import Flask
 from flask.ext.restful import Api
 from flask.ext.cors import CORS
+from common import utils, controllers
 from resources import resources
 
 app = Flask(__name__, static_url_path="")
@@ -30,4 +30,12 @@ api.add_resource(resources.Terminator, "/requests/<int:request_id>/terminator",
 
 
 if __name__ == '__main__':
+    print("Preparing remote maschine...")
+    try:
+        utils.prepare_remote()
+    except:
+        print("Remote maschine preparation failed")
+        raise
+    print("Remote maschine prepared")
+    controllers.init_controllers()
     app.run(debug=False, use_reloader=False, host='0.0.0.0', port=80)

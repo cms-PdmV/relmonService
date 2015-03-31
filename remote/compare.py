@@ -1,17 +1,19 @@
 #!/usr/bin/env python
+"""Script launches RelMon report production,
+        executes report compression and
+        moves report files to afs
 """
-Script launches RelMon report production,
-       executes report compression and
-       moves report files to afs
-"""
+
 import json
 import os
 import argparse
 import httplib
 import subprocess
 import shutil
-from common import utils, relmon
+
 import config as CONFIG
+from common import utils, relmon
+
 
 # read credentials
 credentials = {}

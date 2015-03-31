@@ -1,14 +1,16 @@
 #!/usr/bin/env python
+"""ROOT files downloader (and reporter) for given relmon request id
+(from relmon request service)
 """
-ROOT files downloader (and reporter) for given relmon
-request id (from relmon request service).
-"""
+
 import os
 import argparse
 import httplib
 import json
-from common import utils, relmon
+
 import config as CONFIG
+from common import utils, relmon
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument(dest="id_", help="FIXME: id help")

@@ -1,11 +1,12 @@
-"""
-Shared variables and data file api.
-"""
-from common import relmon
+"""Shared variables and data file api."""
+
 import os
 import threading
 import json
+
 import config as CONFIG
+from common import relmon
+
 
 lock = threading.RLock()
 relmon_data = []

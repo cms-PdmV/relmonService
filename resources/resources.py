@@ -1,18 +1,14 @@
-"""
-Restful flask resources for relmon request service.
-"""
+"""Restful flask resources for relmon request service."""
+
 import os
 import traceback
-import controller
-import config as CONFIG
+
 from flask.ext.restful import Resource
 from flask import request
-from common import shared, relmon
 
-controllers = {}
-for relmon_request in shared.relmons.itervalues():
-    controllers[relmon_request.id_] = controller.Controller(relmon_request)
-    controllers[relmon_request.id_].start()
+import controller
+import config as CONFIG
+from common import shared, relmon, controllers
 
 
 def add_default_HTTP_returns(func):
@@ -109,9 +105,9 @@ class Requests(Resource):
     def post(self):
         relmon_request = relmon.RelmonRequest(**(request.json))
         shared.new(relmon_request)
-        global controllers
-        controllers[relmon_request.id_] = controller.Controller(relmon_request)
-        controllers[relmon_request.id_].start()
+        controllers.controllers[relmon_request.id_] = (
+            controller.Controller(relmon_request))
+        controllers.controllers[relmon_request.id_].start()
         return "OK", 200
 
 
@@ -127,12 +123,12 @@ class Terminator(Resource):
             return "Already terminating", 409
         relmon_request.status = "terminating"
         relmon_request.release_priority_access()
-        controllers[request_id].terminate()
+        controllers.controllers[request_id].terminate()
         return "OK", 200
 
     def delete(self, request_id):
         shared.relmons[request_id]
-        controllers.pop(request_id)
+        controllers.controllers.pop(request_id)
         shared.drop(request_id)
         if (os.path.exists("static/validation_logs/" +
                            str(request_id) + ".log")):

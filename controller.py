@@ -1,7 +1,12 @@
+"""RelMon report production controller. From workflow names to
+completed report
+"""
+
 import time
 import threading
-from common import relmon, shared
+
 import config as CONFIG
+from common import relmon, shared
 
 # worker enums
 WORKER_UPDATER = 1

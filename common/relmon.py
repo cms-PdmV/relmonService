@@ -1,11 +1,20 @@
-import itertools
-import utils
+"""RelMon request (campaign) manipulation tools"""
+
 import fractions
 import Queue
 import threading
 import time
 import json
+import itertools
+
+try:
+    import paramiko
+except ImportError:
+    pass
+
 import config as CONFIG
+from common import utils
+
 
 credentials = {}
 # TODO: handle failures
@@ -244,7 +253,6 @@ class StatusUpdater(Worker):
 
 class SSHWorker(Worker):
     def __init__(self, command):
-        import paramiko
         super(SSHWorker, self).__init__()
         self.command = command
         self.ssh_client = paramiko.SSHClient()
@@ -269,8 +277,8 @@ class Downloader(SSHWorker):
     """
     def __init__(self, request):
         super(Downloader, self).__init__(
-            "cd " + CONFIG.REMOTE_WORK_DIR + "/;" +
-            "./download_DQM_ROOT.py " + str(request.id_))
+            "cd " + CONFIG.REMOTE_WORK_DIR + ';' +
+            "./download_ROOT.py " + str(request.id_))
 
 
 class Reporter(SSHWorker):
@@ -279,9 +287,9 @@ class Reporter(SSHWorker):
     """
     def __init__(self, request):
         super(Reporter, self).__init__(
-            "cd " + CONFIG.REMOTE_CMSSW_DIR + '/;' +
-            " eval `scramv1 runtime -sh`" +
-            "cd " + CONFIG.REMOTE_WORK_DIR + "/;" +
+            "cd " + CONFIG.REMOTE_CMSSW_DIR + ';' +
+            "eval `scramv1 runtime -sh`" +
+            "cd " + CONFIG.REMOTE_WORK_DIR + ';' +
             "./compare.py " + str(request.id_))
 
 
@@ -291,5 +299,5 @@ class Cleaner(SSHWorker):
     """
     def __init__(self, request):
         super(Cleaner, self).__init__(
-            "cd " + CONFIG.REMOTE_WORK_DIR + "/;" +
+            "cd " + CONFIG.REMOTE_WORK_DIR + ';' +
             "./clean.py " + str(request.id_))
