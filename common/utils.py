@@ -23,6 +23,18 @@ with open(CONFIG.CREDENTIALS_PATH) as cred_file:
     credentials = json.load(cred_file)
 
 
+def init_validation_logs_dir():
+    logsdir = os.path.join(
+        os.path.dirname(os.path.abspath(sys.modules['__main__'].__file__)),
+        "static",
+        "validation_logs")
+    if (not os.path.isdir(logsdir)):
+        os.makedirs(os.path.join(logsdir))
+    os.chmod(logsdir, 0777)
+
+
+# TODO: generate logs path while preparing remote.
+# instead of requiring it to appear in config
 def prepare_remote():
     local_main_path = os.path.dirname(
         os.path.abspath(sys.modules['__main__'].__file__))

@@ -30,6 +30,13 @@ api.add_resource(resources.Terminator, "/requests/<int:request_id>/terminator",
 
 
 if __name__ == '__main__':
+    print("Preparing validation logs directory...")
+    try:
+        utils.init_validation_logs_dir()
+    except:
+        print("Failed while preaparing validation logs directory")
+        raise
+    print("Validation logs folder prepared")
     print("Preparing remote maschine...")
     try:
         utils.prepare_remote()
