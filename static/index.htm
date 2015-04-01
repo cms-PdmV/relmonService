@@ -127,11 +127,12 @@
                       (<span ng-init="the_list=sample_list" ng-include="'sample_list_info.htm'"></span>)
                     </accordion-heading>
                     <ul class="list-group">
-                      <li class="list-group-item compact" ng-repeat="sample in sample_list">
+                      <li class="list-group-item compact" style="overflow:hidden" ng-repeat="sample in sample_list">
                         {{sample.name}}
                         <span class="badge"
                               ng-class="request_controller.get_badge_class_by_status(sample.status)">
-                          {{sample.status}}</span>
+                          {{sample.status}}
+                        </span>
                         <span ng-if="['DQMIO', 'ROOT', 'downloaded'].indexOf(sample.status) >= 0"
                               class="badge small">ROOT {{sample.root_count}}/{{sample.run_count}}</span>
                       </li>
