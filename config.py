@@ -12,6 +12,8 @@ LOG_DIR_AT_SERVICE = (
 RELMON_PATH = (
     "/afs/cern.ch/cms/offline/dqm/ReleaseMonitoring-TEST/jdaugalaSandbox")
 FINAL_WM_STATUSES = [
+    "failed",
+    "closed-out",
     "rejected",
     "rejected-archived",
     "aborted-completed",
