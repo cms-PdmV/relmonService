@@ -7,7 +7,7 @@ from flask.ext.restful import Resource
 from flask import request
 
 import controller
-import config as CONFIG
+from config import CONFIG
 from common import shared, relmon, controllers
 
 
@@ -103,6 +103,7 @@ class Requests(Resource):
 
     @add_default_HTTP_returns
     def post(self):
+        print(request.json)
         relmon_request = relmon.RelmonRequest(**(request.json))
         shared.new(relmon_request)
         controllers.controllers[relmon_request.id_] = (

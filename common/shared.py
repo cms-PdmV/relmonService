@@ -4,7 +4,7 @@ import os
 import threading
 import json
 
-import config as CONFIG
+from config import CONFIG
 from common import relmon
 
 

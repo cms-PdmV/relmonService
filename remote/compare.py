@@ -11,7 +11,7 @@ import httplib
 import subprocess
 import shutil
 
-import config as CONFIG
+from config import CONFIG
 from common import utils, relmon
 
 
@@ -54,7 +54,9 @@ def upload_log():
         ["scp", "-p",
          logFile.name,
          CONFIG.USER + "@" + CONFIG.SERVICE_HOST + ":" +
-         CONFIG.LOG_DIR_AT_SERVICE + '/'])
+         os.path.join(CONFIG.SERVICE_WORKING_DIR,
+                      "static",
+                      "validation_logs") + '/'])
     scp_proc_return = scp_proc.wait()
     if (scp_proc_return != 0):
         # TODO: something more useful

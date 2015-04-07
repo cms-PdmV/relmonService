@@ -12,7 +12,8 @@ try:
 except ImportError:
     pass
 
-import config as CONFIG
+import config
+from config import CONFIG
 
 
 HYPERLINK_REGEX = re.compile(r"href=['\"]([-./\w]*)['\"]")
@@ -38,6 +39,8 @@ def init_validation_logs_dir():
 def prepare_remote():
     local_main_path = os.path.dirname(
         os.path.abspath(sys.modules['__main__'].__file__))
+    config.setstring("SERVICE_WORKING_DIR", local_main_path)
+    config.write()
     transport = paramiko.Transport((CONFIG.REMOTE_HOST, 22))
     transport.connect(username=credentials["user"],
                       password=credentials["pass"])
@@ -50,12 +53,12 @@ def prepare_remote():
                                          fattr.filename))
             except IOError:
                 pass
-
+    # create remote "common" directory if it does not exist
     try:
         sftp.mkdir(os.path.join(CONFIG.REMOTE_WORK_DIR, "common"))
     except IOError:
         pass
-
+    # remove files from remote "common" directory
     for fattr in sftp.listdir_attr(
             os.path.join(CONFIG.REMOTE_WORK_DIR, "common")):
         if (stat.S_ISREG(fattr.st_mode)):
@@ -64,11 +67,11 @@ def prepare_remote():
                     CONFIG.REMOTE_WORK_DIR, "common", fattr.filename))
             except IOError:
                 pass
-
     # put files on remote maschine
     sftp.put(os.path.join(local_main_path, "config.py"),
              os.path.join(CONFIG.REMOTE_WORK_DIR, "config.py"))
-
+    sftp.put(os.path.join(local_main_path, "config"),
+             os.path.join(CONFIG.REMOTE_WORK_DIR, "config"))
     for fname in os.listdir(os.path.join(local_main_path, "remote")):
         sftp.put(os.path.join(local_main_path, "remote", fname),
                  os.path.join(CONFIG.REMOTE_WORK_DIR, fname))

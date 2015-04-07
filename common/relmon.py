@@ -12,7 +12,7 @@ try:
 except ImportError:
     pass
 
-import config as CONFIG
+from config import CONFIG
 from common import utils
 
 

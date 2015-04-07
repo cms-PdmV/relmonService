@@ -7,7 +7,7 @@ import httplib
 import json
 import shutil
 
-import config as CONFIG
+from config import CONFIG
 from common import utils, relmon
 
 

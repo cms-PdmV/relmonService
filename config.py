@@ -1,39 +1,32 @@
-SERVICE_HOST = "188.184.185.27"
-SERVICE_PORT = 80
-REMOTE_WORK_DIR = "/build/jdaugala/relmon"
-USER = "jdaugala"
-REMOTE_USER = "jdaugala"
-IGNORE_NOROOT_WORKFLOWS = True
-DATA_FILE_NAME = "data"
-POJECT_FILES_ONILINE_URL = (
-    "https://raw.githubusercontent.com/cms-PdmV/relmonService/master")
-LOG_DIR_AT_SERVICE = (
-    "/home/relmon/relmon_request_service/static/validation_logs")
-RELMON_PATH = (
-    "/afs/cern.ch/cms/offline/dqm/ReleaseMonitoring-TEST/jdaugalaSandbox")
-FINAL_WM_STATUSES = [
-    "failed",
-    "closed-out",
-    "rejected",
-    "rejected-archived",
-    "aborted-completed",
-    "aborted-archived",
-    "announced",
-    "normal-archived"]
-FINAL_RELMON_STATUSES = [
-    "failed",
-    "terminating",
-    "finished"]
-REMOTE_HOST = "cmsdev04.cern.ch"
-CREDENTIALS_PATH = "/afs/cern.ch/user/j/jdaugala/private/credentials"
-REMOTE_CMSSW_DIR = "/build/jdaugala/CMSSW_7_4_0_pre8"
-CERTIFICATE_PATH = "/afs/cern.ch/user/j/jdaugala/.globus/usercert.pem"
-KEY_PATH = "/afs/cern.ch/user/j/jdaugala/.globus/userkey.pem"
-CMSWEB_HOST = "cmsweb.cern.ch"
-DQM_ROOT_URL = "/dqm/relval/data/browse/ROOT"
-DATATIER_CHECK_URL = "/reqmgr/reqMgr/outputDatasetsByRequestName"
-DBSREADER_URL = "/dbs/prod/global/DBSReader"
-WMSTATS_URL = "/couchdb/wmstats"
-TIME_AFTER_THRESHOLD_REACHED = 1
-TIME_BETWEEN_STATUS_UPDATES = 180
-TIME_BETWEEN_DOWNLOADS = 600
+import ConfigParser
+import json
+
+
+class UpdatableStruct():
+    def _update(self, **entries):
+        self.__dict__.update(entries)
+
+conf_dict = {}
+cfg_parser = ConfigParser.RawConfigParser()
+cfg_parser.read("config")
+for item in cfg_parser.items("strings"):
+    conf_dict[item[0].upper()] = item[1]
+for item in cfg_parser.items("lists"):
+    conf_dict[item[0].upper()] = json.loads(item[1])
+for option in cfg_parser.options("ints"):
+    conf_dict[option.upper()] = cfg_parser.getint("ints", option)
+for option in cfg_parser.options("booleans"):
+    conf_dict[option.upper()] = cfg_parser.getboolean("booleans", option)
+
+CONFIG = UpdatableStruct()
+CONFIG._update(**conf_dict)
+
+
+def setstring(name, value):
+    cfg_parser.set("strings", name, value)
+    CONFIG._update(name=value)
+
+
+def write():
+    with open("config", 'w') as cfgfile:
+        cfg_parser.write(cfgfile)

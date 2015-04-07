@@ -5,7 +5,7 @@ completed report
 import time
 import threading
 
-import config as CONFIG
+from config import CONFIG
 from common import relmon, shared
 
 # worker enums

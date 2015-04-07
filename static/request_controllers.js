@@ -90,11 +90,11 @@ function Request_controller($http, $modal, $location) {
                         "Exist nonmatching lists."
                     );
                 }
+                category_for_post.lists = {};
+                category_for_post.lists["reference"] = ref_samples;
+                category_for_post.lists["target"] = targ_samples;
+                post_data["categories"].push(category_for_post);
             }
-            category_for_post.lists = {};
-            category_for_post.lists["reference"] = ref_samples;
-            category_for_post.lists["target"] = targ_samples;
-            post_data["categories"].push(category_for_post);
         }
         if (all_sample_lists_empty) {
             throw new Request_controller_exception(

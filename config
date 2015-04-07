@@ -1,0 +1,44 @@
+[ints]
+time_between_status_updates = 180
+service_port = 80
+time_between_downloads = 600
+time_after_threshold_reached = 1
+
+[strings]
+log_dir_at_service = /home/relmon/relmon_request_service/static/validation_logs
+remote_user = jdaugala
+credentials_path = /afs/cern.ch/user/j/jdaugala/private/credentials
+datatier_check_url = /reqmgr/reqMgr/outputDatasetsByRequestName
+relmon_path = /afs/cern.ch/cms/offline/dqm/ReleaseMonitoring-TEST/jdaugalaSandbox
+dqm_root_url = /dqm/relval/data/browse/ROOT
+wmstats_url = /couchdb/wmstats
+user = jdaugala
+data_file_name = data
+cmsweb_host = cmsweb.cern.ch
+remote_work_dir = /build/jdaugala/relmon
+key_path = /afs/cern.ch/user/j/jdaugala/.globus/userkey.pem
+service_working_dir = /home/relmon/relmon_request_service
+dbsreader_url = /dbs/prod/global/DBSReader
+remote_host = cmsdev04.cern.ch
+service_host = 188.184.185.27
+remote_cmssw_dir = /build/jdaugala/CMSSW_7_4_0_pre8
+certificate_path = /afs/cern.ch/user/j/jdaugala/.globus/usercert.pem
+
+[lists]
+final_relmon_statuses = [
+	"failed",
+	"terminating",
+	"finished"]
+final_wm_statuses = [
+	"failed",
+	"closed-out",
+	"rejected",
+	"rejected-archived",
+	"aborted-completed",
+	"aborted-archived",
+	"announced",
+	"normal-archived"]
+
+[booleans]
+ignore_noroot_workflows = True
+
