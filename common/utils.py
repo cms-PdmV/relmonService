@@ -1,5 +1,12 @@
 """Helper functions for relmon request service."""
 
+import logging
+try:  # Python 2.7+
+    from logging import NullHandler
+except ImportError:
+    class NullHandler(logging.Handler):
+        def emit(self, record):
+            pass
 import stat
 import sys
 import os
@@ -18,6 +25,9 @@ from config import CONFIG
 
 HYPERLINK_REGEX = re.compile(r"href=['\"]([-./\w]*)['\"]")
 
+logger = logging.getLogger(__name__)
+logger.addHandler(NullHandler())
+
 credentials = {}
 # TODO: handle failures
 with open(CONFIG.CREDENTIALS_PATH) as cred_file:
@@ -25,27 +35,32 @@ with open(CONFIG.CREDENTIALS_PATH) as cred_file:
 
 
 def init_validation_logs_dir():
+    logger.info("Initializing validation logs directory")
     logsdir = os.path.join(
         os.path.dirname(os.path.abspath(sys.modules['__main__'].__file__)),
         "static",
         "validation_logs")
     if (not os.path.isdir(logsdir)):
+        logger.debug("Creating new validation logs directory")
         os.makedirs(os.path.join(logsdir))
     os.chmod(logsdir, 0777)
+    logger.info("Validation logs directory initialized")
 
 
-# TODO: generate logs path while preparing remote.
-# instead of requiring it to appear in config
 def prepare_remote():
+    logger.info("Preparing remote maschine")
     local_main_path = os.path.dirname(
         os.path.abspath(sys.modules['__main__'].__file__))
+    logger.debug("Local __main__ path: " + local_main_path)
     config.setstring("SERVICE_WORKING_DIR", local_main_path)
     config.write()
     transport = paramiko.Transport((CONFIG.REMOTE_HOST, 22))
     transport.connect(username=credentials["user"],
                       password=credentials["pass"])
+    logger.info("Connected to " + CONFIG.REMOTE_HOST)
     sftp = paramiko.SFTPClient.from_transport(transport)
     # remove files on remote maschine
+    logger.info("Removing old files on remote machine")
     for fattr in sftp.listdir_attr(CONFIG.REMOTE_WORK_DIR):
         if (stat.S_ISREG(fattr.st_mode)):
             try:
@@ -68,6 +83,7 @@ def prepare_remote():
             except IOError:
                 pass
     # put files on remote maschine
+    logger.info("Uploading files to remote maschine")
     sftp.put(os.path.join(local_main_path, "config.py"),
              os.path.join(CONFIG.REMOTE_WORK_DIR, "config.py"))
     sftp.put(os.path.join(local_main_path, "config"),
@@ -82,14 +98,17 @@ def prepare_remote():
                  os.path.join(CONFIG.REMOTE_WORK_DIR, "common", fname))
     sftp.close()
     transport.close()
+    logger.info("Remote maschine prepared")
 
 
 def httpget(host, url, port=80):
+    logger.info("HTTP GET " + host + url)
     conn = httplib.HTTPConnection(host, port)
     conn.connect()
     conn.request("GET", url=url)
     response = conn.getresponse()
     status = response.status
+    logger.debug("HTTP code " + str(status))
     content = response.read()
     conn.close()
     return status, content
@@ -101,6 +120,7 @@ def httpsget(host,
              certpath=CONFIG.CERTIFICATE_PATH,
              keypath=CONFIG.KEY_PATH,
              password=None):
+    logger.info("HTTPS GET " + host + url)
     conn = httplib.HTTPSConnection(host=host,
                                    port=port,
                                    key_file=keypath,
@@ -109,6 +129,7 @@ def httpsget(host,
     conn.request("GET", url=url)
     response = conn.getresponse()
     status = response.status
+    logger.debug("HTTP code " + str(status))
     content = response.read()
     conn.close()
     return status, content
@@ -121,6 +142,8 @@ def httpsget_large_file(filepath,
                         certpath=CONFIG.CERTIFICATE_PATH,
                         keypath=CONFIG.KEY_PATH,
                         password=None):
+    logger.info("HTTPS GET large file " + host + url +
+                " to file '" + filepath + "'")
     conn = httplib.HTTPSConnection(host=host,
                                    port=port,
                                    key_file=keypath,
@@ -140,6 +163,8 @@ def httpsget_large_file(filepath,
 
 
 def http(method, host, url, data=None, port=80):
+    logger.info("HTTP " + method + " " + host + url)
+    logger.debug(data)
     conn = httplib.HTTPConnection(host, port)
     conn.connect()
     headers = {"Content-type": "application/json"}
@@ -149,6 +174,7 @@ def http(method, host, url, data=None, port=80):
                  headers=headers)
     response = conn.getresponse()
     status = response.status
+    logger.debug("HTTP code " + str(status))
     content = response.read()
     conn.close()
     return status, content
@@ -172,8 +198,8 @@ def get_workload_manager_status(sample_name):
         wm_status = (
             data["rows"][0]["doc"]["request_status"][-1]["status"])
         return wm_status
-    except (ValueError, LookupError) as err:
-        print(err)
+    except (ValueError, LookupError):
+        logger.exception("get_workload_manager_status returning with error")
         return None
 
 
@@ -187,15 +213,15 @@ def get_ROOT_file_urls(CMSSW, category_name):
         url += "/RelValData/"
     else:
         url += "/RelVal/"
-    CMSSW = re.search("CMSSW_\d_\d_", CMSSW)
-    # TODO: handle this error
-    if (CMSSW is None):
+    CMSSW_parsed = re.search("CMSSW_\d_\d_", CMSSW)
+    if (CMSSW_parsed is None):
+        logger.warning("Failed parsing CMSSW version from '" + CMSSW + "'")
         return None
-    url += CMSSW.group() + "x/"
+    url += CMSSW_parsed.group() + "x/"
     status, data = httpsget(host=CONFIG.CMSWEB_HOST,
                             url=url)
-    # TODO: handle failure
     if (status != httplib.OK):
+        logger.warning("get_ROOT_file_urls failing with HTTP request")
         return None
     hyperlinks = HYPERLINK_REGEX.findall(data)[1:]
     for u_idx, url in enumerate(hyperlinks):
@@ -210,7 +236,6 @@ def get_DQMIO_status(sample_name):
     """
     status, data = httpsget(host=CONFIG.CMSWEB_HOST,
                             url=CONFIG.DATATIER_CHECK_URL + '/' + sample_name)
-    # TODO: handle request failure
     if (status == httplib.OK):
         if ("DQMIO" in data):
             rjson = json.loads(data.replace('\'', '\"'))
@@ -219,6 +244,7 @@ def get_DQMIO_status(sample_name):
                 return ("waiting", None)
             return ("DQMIO", DQMIO_string)
         return ("NoDQMIO", None)
+    logger.warning("get_DQMIO_status failing with HTTP request")
     return ("waiting", None)
 
 
@@ -228,14 +254,14 @@ def get_run_count(DQMIO_string):
     status, data = httpsget(
         host=CONFIG.CMSWEB_HOST,
         url=CONFIG.DBSREADER_URL + "/runs?dataset=" + DQMIO_string)
-    # TODO: handle request failure
     if (status != httplib.OK):
+        logger.warning("get_run_count failing with HTTP request")
         return None
     try:
         rjson = json.loads(data)
         return (len(rjson[0]["run_num"]))
-    except (ValueError, LookupError) as err:
-        print(err)
+    except (ValueError, LookupError):
+        logger.exception("get_workload_manager_status returning with error")
         return None
 
 

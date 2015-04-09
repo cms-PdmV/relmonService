@@ -1,10 +1,20 @@
 """Relmon request service. Automating relmon reports production."""
 
+import sys
+import logging
+import logging.config
+
 from flask import Flask
 from flask.ext.restful import Api
 from flask.ext.cors import CORS
 from common import utils, controllers
 from resources import resources
+
+logging.config.fileConfig("logging.ini", disable_existing_loggers=False)
+logger = logging.getLogger(__name__)
+stdout_handler = logging.StreamHandler(sys.stdout)
+werkzeug_logger = logging.getLogger("werkzeug")
+werkzeug_logger.addHandler(stdout_handler)
 
 app = Flask(__name__, static_url_path="")
 cors = CORS(app)
@@ -28,21 +38,18 @@ api.add_resource(resources.RequestStatus,
 api.add_resource(resources.Terminator, "/requests/<int:request_id>/terminator",
                  endpoint="terminator")
 
+logger.info("Flask resources atached")
+
 
 if __name__ == '__main__':
-    print("Preparing validation logs directory...")
     try:
         utils.init_validation_logs_dir()
-    except:
-        print("Failed while preaparing validation logs directory")
-        raise
-    print("Validation logs folder prepared")
-    print("Preparing remote maschine...")
-    try:
         utils.prepare_remote()
+        controllers.init_controllers()
+        logger.info("Controllers initialized")
+        print("Service is about to start.")
+        print("You may wish to check log files sometimes.")
+        app.run(debug=False, use_reloader=False, host='0.0.0.0', port=80)
     except:
-        print("Remote maschine preparation failed")
+        logger.exception("Uncaught exception")
         raise
-    print("Remote maschine prepared")
-    controllers.init_controllers()
-    app.run(debug=False, use_reloader=False, host='0.0.0.0', port=80)

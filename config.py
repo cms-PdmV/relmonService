@@ -1,5 +1,16 @@
 import ConfigParser
 import json
+import logging
+try:  # Python 2.7+
+    from logging import NullHandler
+except ImportError:
+    class NullHandler(logging.Handler):
+        def emit(self, record):
+            pass
+
+
+logger = logging.getLogger(__name__)
+logger.addHandler(NullHandler())
 
 
 class UpdatableStruct():
@@ -8,6 +19,7 @@ class UpdatableStruct():
 
 conf_dict = {}
 cfg_parser = ConfigParser.RawConfigParser()
+logger.info("Reading configuration file 'config'")
 cfg_parser.read("config")
 for item in cfg_parser.items("strings"):
     conf_dict[item[0].upper()] = item[1]
@@ -23,10 +35,13 @@ CONFIG._update(**conf_dict)
 
 
 def setstring(name, value):
+    logger.info("Updating configuration file")
+    logger.info(name + "=" + value)
     cfg_parser.set("strings", name, value)
     CONFIG._update(name=value)
 
 
 def write():
+    logger.info("Writing to configuration file")
     with open("config", 'w') as cfgfile:
         cfg_parser.write(cfgfile)

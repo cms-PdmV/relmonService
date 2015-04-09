@@ -1,7 +1,14 @@
 """Restful flask resources for relmon request service."""
 
+import logging
+try:  # Python 2.7+
+    from logging import NullHandler
+except ImportError:
+    class NullHandler(logging.Handler):
+        def emit(self, record):
+            pass
 import os
-import traceback
+import json
 
 from flask.ext.restful import Resource
 from flask import request
@@ -10,6 +17,9 @@ import controller
 from config import CONFIG
 from common import shared, relmon, controllers
 
+logger = logging.getLogger(__name__)
+logger.addHandler(NullHandler())
+
 
 def add_default_HTTP_returns(func):
     """Decorate methods to add default HTTP responses"""
@@ -17,13 +27,13 @@ def add_default_HTTP_returns(func):
         try:
             return func(*args, **kwargs)
         except (TypeError, ValueError):
-            traceback.print_exc()
+            logger.info("Response: Bad request", exc_info=True)
             return "Bad request", 400
         except IndexError:
-            traceback.print_exc()
+            logger.info("Respnse: Not found", exc_info=True)
             return "Not Found", 404
         except Exception:
-            traceback.print_exc()
+            logger.exception("Response: Internal error")
             return "Internal error", 500
     return decorator
 
@@ -40,6 +50,7 @@ class Sample(Resource):
 
     @add_default_HTTP_returns
     def put(self, request_id, category, sample_list, sample_name):
+        logger.debug("request data: " + json.dumps(request.json))
         relmon_request = shared.relmons[request_id]
         the_category = [i for i in relmon_request.categories if
                         i["name"] == category][0]
@@ -60,6 +71,7 @@ class RequestStatus(Resource):
 
     @add_default_HTTP_returns
     def put(self, request_id):
+        logger.debug("request data: " + json.dumps(request.json))
         relmon_request = shared.relmons[request_id]
         # TODO: check new_status for validity
         relmon_request.get_access()
@@ -103,7 +115,7 @@ class Requests(Resource):
 
     @add_default_HTTP_returns
     def post(self):
-        print(request.json)
+        logger.debug("request data: " + json.dumps(request.json))
         relmon_request = relmon.RelmonRequest(**(request.json))
         shared.new(relmon_request)
         controllers.controllers[relmon_request.id_] = (
@@ -114,13 +126,13 @@ class Requests(Resource):
 
 class Terminator(Resource):
     """Documentation for Terminator
-
     """
     @add_default_HTTP_returns
     def post(self, request_id):
         relmon_request = shared.relmons[request_id]
         relmon_request.get_priority_access()
         if (relmon_request.status == "terminating"):
+            logger.info("Response: Already terminating")
             return "Already terminating", 409
         relmon_request.status = "terminating"
         relmon_request.release_priority_access()

@@ -4,6 +4,8 @@
         moves report files to afs
 """
 
+import logging
+import logging.handlers
 import json
 import os
 import argparse
@@ -14,6 +16,13 @@ import shutil
 from config import CONFIG
 from common import utils, relmon
 
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+handler = logging.handlers.RotatingFileHandler(
+    "download_ROOT.log", mode='a', maxBytes=10485760, backupCount=4)
+handler.setLevel(logging.INFO)
+logger.addHandler(handler)
 
 # read credentials
 credentials = {}

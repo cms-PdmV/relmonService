@@ -1,5 +1,12 @@
 """RelMon request (campaign) manipulation tools"""
 
+import logging
+try:  # Python 2.7+
+    from logging import NullHandler
+except ImportError:
+    class NullHandler(logging.Handler):
+        def emit(self, record):
+            pass
 import fractions
 import Queue
 import threading
@@ -16,10 +23,20 @@ from config import CONFIG
 from common import utils
 
 
+logger = logging.getLogger(__name__)
+logger.addHandler(NullHandler())
+
 credentials = {}
-# TODO: handle failures
-with open(CONFIG.CREDENTIALS_PATH) as cred_file:
-    credentials = json.load(cred_file)
+try:
+    logger.info("Reading credentials")
+    with open(CONFIG.CREDENTIALS_PATH) as cred_file:
+        logger.info("Parsing credentials")
+        credentials = json.load(cred_file)
+    credentials["user"]
+    credentials["pass"]
+except:
+    logger.exception("Failed credentials reading/parsing")
+    raise
 
 
 class RelmonRequest():
@@ -28,18 +45,23 @@ class RelmonRequest():
     """
     def __init__(self, name, threshold, categories,
                  id_=None, status="initial", log=False):
+        self.id_ = id_
+        if (self.id_ is None):
+            self.id_ = int(time.time())
+            logger.debug("Initializing new RelmonRequest " + str(self.id_))
+        else:
+            logger.debug("Initializing RelmonRequest " + str(self.id_))
         if (int(threshold) < 0 or int(threshold) > 100):
+            logger.warning("RelmonRequest " + str(self.id_) +
+                           "threshold out of range")
             raise ValueError("Threshold must be an integer [0;100]")
         self.lock = threading.RLock()
         self.high_priority_queue = Queue.Queue()
         self.name = name
         self.threshold = threshold
         self.categories = categories
-        self.id_ = id_
         self.status = status
         self.log = log
-        if (self.id_ is None):
-            self.id_ = int(time.time())
         for category in self.categories:
             for sample_list in category["lists"].itervalues():
                 for sample_idx, sample in enumerate(sample_list):
@@ -50,6 +72,7 @@ class RelmonRequest():
                         sample_list[sample_idx] = tmp_sample
 
     def to_dict(self):
+        logger.debug(str(self.id_) + "to_dict()")
         return {
             "id_": self.id_,
             "name": self.name,
@@ -60,20 +83,27 @@ class RelmonRequest():
         }
 
     def get_access(self):
+        logger.debug("Accessing RR " + str(self.id_))
         self.high_priority_queue.join()
         self.lock.acquire()
+        logger.debug("Got access to RR " + str(self.id_))
 
     def release_access(self):
         self.lock.release()
+        logger.debug("Released access to RR " + str(self.id_))
 
     def get_priority_access(self):
+        logger.debug("Priority accessing RR " + str(self.id_) +
+                     " lock: " + str(self.lock))
         self.high_priority_queue.put(self)
         self.lock.acquire()
+        logger.debug("Got priority access to RR " + str(self.id_))
 
     def release_priority_access(self):
         self.lock.release()
         self.high_priority_queue.get()
         self.high_priority_queue.task_done()
+        logger.debug("Released priority access to RR " + str(self.id_))
 
     def is_download_ready(self):
         frac_ROOT = self.sample_fraction(
@@ -140,12 +170,19 @@ class StatusUpdater(Worker):
     def run(self):
         """Update sample statuses and return count of samples that changed
         their statuses to 'ROOT' by this update"""
-        has_new_DQMIO = self.update_DQMIO_statuses()
-        if (has_new_DQMIO):
-            self.update_ROOT_names_parts()
-            self.update_run_counts()
-        self.update_wm_statuses()
-        self.update_ROOT_statuses()
+        logger.info("Runing StatusUpdater for RR " + str(self.request.id_))
+        try:
+            has_new_DQMIO = self.update_DQMIO_statuses()
+            if (has_new_DQMIO):
+                self.update_ROOT_names_parts()
+                self.update_run_counts()
+            self.update_wm_statuses()
+            self.update_ROOT_statuses()
+        except:
+            logger.exception("Uncaught exception in StatusUpdater run")
+            raise
+        finally:
+            logger.info("Finished StatusUpdater")
 
     def update_DQMIO_statuses(self):
         request_has_new_DQMIO_samples = False
@@ -249,6 +286,7 @@ class StatusUpdater(Worker):
 
     def stop(self):
         self._stop = True
+        logger.info("Stopping StatusUpdater for RR " + str(self.request.id_))
 
 
 class SSHWorker(Worker):
@@ -257,18 +295,32 @@ class SSHWorker(Worker):
         self.command = command
         self.ssh_client = paramiko.SSHClient()
         self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.ret_code = None
 
     def run(self):
-        self.ssh_client.connect(CONFIG.REMOTE_HOST,
-                                username=credentials["user"],
-                                password=credentials["pass"])
-        (stdin, stdout, stderr) = self.ssh_client.exec_command(self.command)
-        print(stdout.readlines())
-        print(stderr.readlines())
-        self.ssh_client.close()
+        logger.info("SSHWorker run " + self.command)
+        try:
+            self.ssh_client.connect(CONFIG.REMOTE_HOST,
+                                    username=credentials["user"],
+                                    password=credentials["pass"])
+            # NOTE exec_command timeout does not work. Think of something..
+            (_, stdout, stderr) = self.ssh_client.exec_command(self.command)
+            self.ret_code = stdout.channel.recv_exit_status()
+            if (self.ret_code != 0):
+                logger.error("Remote command '" + self.command +
+                             "' returned with code " + str(self.ret_code) +
+                             ". More info might be found in log files at " +
+                             CONFIG.REMOTE_HOST + ':' + CONFIG.REMOTE_WORK_DIR)
+            self.ssh_client.close()
+        except:
+            logger.exception("Uncaught exception in SSHWorker run")
+            raise
+        finally:
+            logger.info("Finished SSHWorker")
 
     def stop(self):
         self.ssh_client.close()
+        logger.info("Stopping SSHWorker")
 
 
 class Downloader(SSHWorker):
@@ -278,7 +330,8 @@ class Downloader(SSHWorker):
     def __init__(self, request):
         super(Downloader, self).__init__(
             "cd " + CONFIG.REMOTE_WORK_DIR + ';' +
-            "./download_ROOT.py " + str(request.id_))
+            "./download_ROOT.py " + str(request.id_) +
+            " > download_ROOT.out 2>&1")
 
 
 class Reporter(SSHWorker):
@@ -290,7 +343,7 @@ class Reporter(SSHWorker):
             "cd " + CONFIG.REMOTE_CMSSW_DIR + ';' +
             "eval `scramv1 runtime -sh`" +
             "cd " + CONFIG.REMOTE_WORK_DIR + ';' +
-            "./compare.py " + str(request.id_))
+            "./compare.py " + str(request.id_) + " > compare.out 2>&1")
 
 
 class Cleaner(SSHWorker):
@@ -300,4 +353,4 @@ class Cleaner(SSHWorker):
     def __init__(self, request):
         super(Cleaner, self).__init__(
             "cd " + CONFIG.REMOTE_WORK_DIR + ';' +
-            "./clean.py " + str(request.id_))
+            "./clean.py " + str(request.id_) + " > clean.out 2>&1")
