@@ -282,6 +282,10 @@ class StatusUpdater(Worker):
                 elif (CONFIG.IGNORE_NOROOT_WORKFLOWS and
                       sample["wm_status"] in CONFIG.FINAL_WM_STATUSES):
                     sample["status"] = "NoROOT"
+                    logger.info(sample["name"] + "setting to 'NoROOT', " +
+                                "wm_status is final but not enough " +
+                                "files were found with '" +
+                                sample["ROOT_file_name_part"] + "'")
                 self.request.release_access()
 
     def stop(self):
