@@ -63,31 +63,20 @@ remote_reports = CONFIG.RELMON_PATH + '/' + request.name + '/'
 
 
 def upload_log():
-    global logFile, request
-    scp_proc = subprocess.Popen(
-        ["scp", "-p",
-         logFile.name,
-         CONFIG.USER + "@" + CONFIG.SERVICE_HOST + ":" +
-         os.path.join(CONFIG.SERVICE_WORKING_DIR,
-                      "static",
-                      "validation_logs") + '/'])
-    scp_proc_return = scp_proc.wait()
-    if (scp_proc_return != 0):
-        # TODO: something more useful
-        print("scp fail")
+    global request
     cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
     if (cookie is None):
         logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
         exit(1)
     status, data = utils.https(
-        "PUT",
+        "POST",
         CONFIG.SERVICE_HOST,
         "/requests/" + str(request.id_) + "/log",
-        data=json.dumps({"value": True}),
+        data=open(str(request.id_) + ".log", "rb"),
         headers={"Cookie": cookie})
     if (status != httplib.OK):
         # FIXME: solve this problem
-        print("PUT about log fail")
+        print("PUT log fail")
 
 
 # TODO: think of other ways for controllers to know about failures/success

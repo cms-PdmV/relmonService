@@ -4,8 +4,7 @@ import sys
 import logging
 import logging.config
 
-from flask import Flask, session, redirect
-from flask_sso import SSO
+from flask import Flask
 from flask.ext.restful import Api
 from flask.ext.cors import CORS
 

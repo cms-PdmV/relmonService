@@ -44,11 +44,9 @@ if (not os.path.isdir(main_path)):
 
 def init_validation_logs_dir():
     logger.info("Initializing validation logs directory")
-    logsdir = os.path.join(main_path, "static", "validation_logs")
-    if (not os.path.isdir(logsdir)):
+    if (not os.path.isdir(CONFIG.LOGS_DIR)):
         logger.debug("Creating new validation logs directory")
-        os.makedirs(os.path.join(logsdir))
-    # os.chmod(logsdir, 0777)
+        os.makedirs(CONFIG.LOGS_DIR)
     logger.info("Validation logs directory initialized")
 
 

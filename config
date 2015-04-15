@@ -1,4 +1,31 @@
+[ints]
+time_between_status_updates = 180
+service_port = 80
+time_between_downloads = 600
+time_after_threshold_reached = 1
+
+[strings]
+remote_user = jdaugala
+credentials_path = /afs/cern.ch/user/j/jdaugala/private/credentials
+datatier_check_url = /reqmgr/reqMgr/outputDatasetsByRequestName
+relmon_path = /afs/cern.ch/cms/offline/dqm/ReleaseMonitoring-TEST/jdaugalaSandbox
+dqm_root_url = /dqm/relval/data/browse/ROOT
+key_path = /afs/cern.ch/user/j/jdaugala/.globus/userkey.pem
+wmstats_url = /couchdb/wmstats
+data_file_name = data
+cmsweb_host = cmsweb.cern.ch
+remote_work_dir = /build/jdaugala/relmon
+user = jdaugala
+service_working_dir = /home/relmon/relmon_request_service
+logs_dir = logs
+dbsreader_url = /dbs/prod/global/DBSReader
+remote_host = cmsdev04.cern.ch
+service_host = 188.184.185.27
+remote_cmssw_dir = /build/jdaugala/CMSSW_7_4_0_pre8
+certificate_path = /afs/cern.ch/user/j/jdaugala/.globus/usercert.pem
+
 [lists]
+administrators = ["jdaugala"]
 authorized_users = ["jdaugala",
 	"anorkus"]
 final_relmon_statuses = [
@@ -14,32 +41,6 @@ final_wm_statuses = [
 	"aborted-archived",
 	"announced",
 	"normal-archived"]
-
-[strings]
-log_dir_at_service = /home/relmon/relmon_request_service/static/validation_logs
-remote_user = jdaugala
-credentials_path = /afs/cern.ch/user/j/jdaugala/private/credentials
-datatier_check_url = /reqmgr/reqMgr/outputDatasetsByRequestName
-relmon_path = /afs/cern.ch/cms/offline/dqm/ReleaseMonitoring-TEST/jdaugalaSandbox
-dqm_root_url = /dqm/relval/data/browse/ROOT
-remote_host = cmsdev04.cern.ch
-data_file_name = data
-cmsweb_host = cmsweb.cern.ch
-remote_work_dir = /build/jdaugala/relmon
-user = jdaugala
-certificate_path = /afs/cern.ch/user/j/jdaugala/.globus/usercert.pem
-remote_cmssw_dir = /build/jdaugala/CMSSW_7_4_0_pre8
-dbsreader_url = /dbs/prod/global/DBSReader
-wmstats_url = /couchdb/wmstats
-service_host = 188.184.185.27
-service_working_dir = /home/relmon/relmon_request_service
-key_path = /afs/cern.ch/user/j/jdaugala/.globus/userkey.pem
-
-[ints]
-time_after_threshold_reached = 1
-time_between_status_updates = 180
-time_between_downloads = 600
-service_port = 80
 
 [booleans]
 ignore_noroot_workflows = True

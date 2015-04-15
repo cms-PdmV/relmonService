@@ -21,6 +21,16 @@ logger = logging.getLogger(__name__)
 logger.addHandler(NullHandler())
 
 
+def admin_only(func):
+    """Decorate methods to make them accessable only for administrators"""
+    def decorator(*args, **kwargs):
+        if (request.headers["Adfs-Login"] in CONFIG.ADMINISTRATORS):
+            return func(*args, **kwargs)
+        else:
+            return "Forbidden", 403
+    return decorator
+
+
 def authorize(func):
     """Decorate methods to do authorization"""
     def decorator(*args, **kwargs):
@@ -59,7 +69,7 @@ class Sample(Resource):
         the_list = the_category["lists"][sample_list]
         return [i for i in the_list if i["name"] == sample_name][0], 200
 
-    @authorize
+    @admin_only
     @add_default_HTTP_returns
     def put(self, request_id, category, sample_list, sample_name):
         logger.debug("request data: " + json.dumps(request.json))
@@ -81,7 +91,7 @@ class Sample(Resource):
 # TODO: think of other ways to change status internally
 class RequestStatus(Resource):
 
-    @authorize
+    @admin_only
     @add_default_HTTP_returns
     def put(self, request_id):
         logger.debug("request data: " + json.dumps(request.json))
@@ -98,16 +108,34 @@ class RequestStatus(Resource):
 
 class RequestLog(Resource):
 
-    @authorize
+    @admin_only
     @add_default_HTTP_returns
-    def put(self, request_id):
+    def post(self, request_id):
+        logger.info("POSTing logfile")
         relmon_request = shared.relmons[request_id]
+        filename = str(request_id) + ".log"
+        with open(os.path.join(CONFIG.LOGS_DIR, filename), 'w') as f:
+            f.write(request.stream.read())
         relmon_request.get_access()
         try:
-            relmon_request.log = request.json["value"]
+            relmon_request.log = True
         finally:
             relmon_request.release_access()
         return "OK", 200
+
+    @authorize
+    @add_default_HTTP_returns
+    def get(self, request_id):
+        shared.relmons[request_id]
+        if (os.path.isfile(os.path.join(CONFIG.LOGS_DIR,
+                                        str(request_id) + ".log"))):
+            return send_from_directory(
+                CONFIG.LOGS_DIR,
+                (str(request_id) + ".log"),
+                as_attachement=True,
+                attachment_filename=(str(request_id) + ".log"))
+        else:
+            return "Log file does not exist", 404
 
 
 class Request(Resource):
@@ -157,16 +185,14 @@ class Terminator(Resource):
         controllers.controllers[request_id].terminate()
         return "OK", 200
 
-    @authorize
+    @admin_only
     @add_default_HTTP_returns
     def delete(self, request_id):
         shared.relmons[request_id]
         controllers.controllers.pop(request_id)
         shared.drop(request_id)
-        if (os.path.exists("static/validation_logs/" +
-                           str(request_id) + ".log")):
-            os.remove("static/validation_logs/" +
-                      str(request_id) + ".log")
+        if (os.path.exists(CONFIG.LOGS_DIR + str(request_id) + ".log")):
+            os.remove(CONFIG.LOGS_DIR + str(request_id) + ".log")
         return "OK", 200
 
 
@@ -176,8 +202,10 @@ class UserInfo(Resource):
     @authorize
     @add_default_HTTP_returns
     def get(self):
-        # return session["user"].get("fullname")
-        return request.headers["Adfs-Login"]
+        return {"username": request.headers["Adfs-Login"],
+                "name": request.headers["Adfs-Name"],
+                "group": request.headers["Adfs-Group"],
+                "email": request.headers["Adfs-Email"]}
 
 
 class GUI(Resource):
