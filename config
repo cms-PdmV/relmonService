@@ -1,4 +1,6 @@
 [lists]
+authorized_users = ["jdaugala",
+	"anorkus"]
 final_relmon_statuses = [
 	"failed",
 	"terminating",

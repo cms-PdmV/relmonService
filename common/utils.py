@@ -10,6 +10,7 @@ except ImportError:
 import stat
 import sys
 import os
+import subprocess
 import re
 import json
 import httplib
@@ -23,7 +24,10 @@ import config
 from config import CONFIG
 
 
-HYPERLINK_REGEX = re.compile(r"href=['\"]([-./\w]*)['\"]")
+HYPERLINK_REGEX = re.compile(r"href=['\"]([-\._a-zA-Z/\d]*)['\"]")
+SAMLIDP_REGEX = re.compile(r"(_saml_idp)\s+([a-zA-z\d_]+)")
+SHIBSESSION_REGEX = re.compile(r"(_shibsession_[a-zA-z\d_]+)\s+([a-zA-z\d_]+)")
+CMSSW_VERSION_REGEX = re.compile(r"CMSSW_\d_\d_")
 
 logger = logging.getLogger(__name__)
 logger.addHandler(NullHandler())
@@ -33,26 +37,25 @@ credentials = {}
 with open(CONFIG.CREDENTIALS_PATH) as cred_file:
     credentials = json.load(cred_file)
 
+main_path = os.path.realpath(sys.argv[0])
+if (not os.path.isdir(main_path)):
+    main_path = os.path.dirname(main_path)
+
 
 def init_validation_logs_dir():
     logger.info("Initializing validation logs directory")
-    logsdir = os.path.join(
-        os.path.dirname(os.path.abspath(sys.modules['__main__'].__file__)),
-        "static",
-        "validation_logs")
+    logsdir = os.path.join(main_path, "static", "validation_logs")
     if (not os.path.isdir(logsdir)):
         logger.debug("Creating new validation logs directory")
         os.makedirs(os.path.join(logsdir))
-    os.chmod(logsdir, 0777)
+    # os.chmod(logsdir, 0777)
     logger.info("Validation logs directory initialized")
 
 
 def prepare_remote():
     logger.info("Preparing remote maschine")
-    local_main_path = os.path.dirname(
-        os.path.abspath(sys.modules['__main__'].__file__))
-    logger.debug("Local __main__ path: " + local_main_path)
-    config.setstring("SERVICE_WORKING_DIR", local_main_path)
+    logger.debug("Local __main__ path: " + main_path)
+    config.setstring("SERVICE_WORKING_DIR", main_path)
     config.write()
     transport = paramiko.Transport((CONFIG.REMOTE_HOST, 22))
     transport.connect(username=credentials["user"],
@@ -84,28 +87,28 @@ def prepare_remote():
                 pass
     # put files on remote maschine
     logger.info("Uploading files to remote maschine")
-    sftp.put(os.path.join(local_main_path, "config.py"),
+    sftp.put(os.path.join(main_path, "config.py"),
              os.path.join(CONFIG.REMOTE_WORK_DIR, "config.py"))
-    sftp.put(os.path.join(local_main_path, "config"),
+    sftp.put(os.path.join(main_path, "config"),
              os.path.join(CONFIG.REMOTE_WORK_DIR, "config"))
-    for fname in os.listdir(os.path.join(local_main_path, "remote")):
-        sftp.put(os.path.join(local_main_path, "remote", fname),
+    for fname in os.listdir(os.path.join(main_path, "remote")):
+        sftp.put(os.path.join(main_path, "remote", fname),
                  os.path.join(CONFIG.REMOTE_WORK_DIR, fname))
         sftp.chmod(os.path.join(CONFIG.REMOTE_WORK_DIR, fname), 0775)
 
-    for fname in os.listdir(os.path.join(local_main_path, "common")):
-        sftp.put(os.path.join(local_main_path, "common", fname),
+    for fname in os.listdir(os.path.join(main_path, "common")):
+        sftp.put(os.path.join(main_path, "common", fname),
                  os.path.join(CONFIG.REMOTE_WORK_DIR, "common", fname))
     sftp.close()
     transport.close()
     logger.info("Remote maschine prepared")
 
 
-def httpget(host, url, port=80):
+def httpget(host, url, headers={}, port=80):
     logger.info("HTTP GET " + host + url)
     conn = httplib.HTTPConnection(host, port)
     conn.connect()
-    conn.request("GET", url=url)
+    conn.request("GET", url=url, headers=headers)
     response = conn.getresponse()
     status = response.status
     logger.debug("HTTP code " + str(status))
@@ -116,6 +119,7 @@ def httpget(host, url, port=80):
 
 def httpsget(host,
              url,
+             headers={},
              port=443,
              certpath=CONFIG.CERTIFICATE_PATH,
              keypath=CONFIG.KEY_PATH,
@@ -126,7 +130,7 @@ def httpsget(host,
                                    key_file=keypath,
                                    cert_file=certpath)
     conn.connect()
-    conn.request("GET", url=url)
+    conn.request("GET", url=url, headers=headers)
     response = conn.getresponse()
     status = response.status
     logger.debug("HTTP code " + str(status))
@@ -138,6 +142,7 @@ def httpsget(host,
 def httpsget_large_file(filepath,
                         host,
                         url,
+                        headers={},
                         port=443,
                         certpath=CONFIG.CERTIFICATE_PATH,
                         keypath=CONFIG.KEY_PATH,
@@ -149,7 +154,7 @@ def httpsget_large_file(filepath,
                                    key_file=keypath,
                                    cert_file=certpath)
     conn.connect()
-    conn.request("GET", url=url)
+    conn.request("GET", url=url, headers=headers)
     response = conn.getresponse()
     with open(filepath, "wb") as dest_file:
         while True:
@@ -162,12 +167,23 @@ def httpsget_large_file(filepath,
     conn.close()
 
 
-def http(method, host, url, data=None, port=80):
-    logger.info("HTTP " + method + " " + host + url)
+def https(method,
+          host,
+          url,
+          data=None,
+          headers={},
+          port=443,
+          certpath=CONFIG.CERTIFICATE_PATH,
+          keypath=CONFIG.KEY_PATH,
+          password=None):
+    logger.info("HTTPS " + method + " " + host + url)
     logger.debug(data)
-    conn = httplib.HTTPConnection(host, port)
+    conn = httplib.HTTPSConnection(host=host,
+                                   port=port,
+                                   key_file=keypath,
+                                   cert_file=certpath)
     conn.connect()
-    headers = {"Content-type": "application/json"}
+    headers.update({"Content-type": "application/json"})
     conn.request(method=method,
                  url=url,
                  body=data,
@@ -178,6 +194,31 @@ def http(method, host, url, data=None, port=80):
     content = response.read()
     conn.close()
     return status, content
+
+
+def get_sso_cookie(url):
+    sso_cookie_proc = subprocess.Popen(
+        ["cern-get-sso-cookie", "-u", url, "-o", "cookie.txt"],
+        subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = sso_cookie_proc.communicate()
+    if stdout:
+        logger.info(stdout)
+    if stderr:
+        logger.error(stderr)
+    sso_cookie_proc_return = sso_cookie_proc.wait()
+    if (sso_cookie_proc_return != 0):
+        logger.error("Getting cern sso cookie for " + url +
+                     " failed. Code:" + sso_cookie_proc_return)
+        return None
+    with open("cookie.txt", "r") as cookiefile:
+        content = cookiefile.read()
+        shibsession = re.search(SHIBSESSION_REGEX, content)
+        saml_idp = re.search(SAMLIDP_REGEX, content)
+        if (shibsession and saml_idp):
+            return (shibsession.group(1) + "=" + shibsession.group(2) +
+                    "; " + saml_idp.group(1) + "=" + saml_idp.group(2))
+    logger.error("Parsing sso cookie failed")
+    return None
 
 
 # given workflow name, returns workflow status from Workload
@@ -213,7 +254,7 @@ def get_ROOT_file_urls(CMSSW, category_name):
         url += "/RelValData/"
     else:
         url += "/RelVal/"
-    CMSSW_parsed = re.search("CMSSW_\d_\d_", CMSSW)
+    CMSSW_parsed = re.search(CMSSW_VERSION_REGEX, CMSSW)
     if (CMSSW_parsed is None):
         logger.warning("Failed parsing CMSSW version from '" + CMSSW + "'")
         return None

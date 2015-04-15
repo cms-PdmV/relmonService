@@ -4,9 +4,11 @@ import sys
 import logging
 import logging.config
 
-from flask import Flask
+from flask import Flask, session, redirect
+from flask_sso import SSO
 from flask.ext.restful import Api
 from flask.ext.cors import CORS
+
 from common import utils, controllers
 from resources import resources
 
@@ -19,6 +21,10 @@ werkzeug_logger.addHandler(stdout_handler)
 app = Flask(__name__, static_url_path="")
 cors = CORS(app)
 api = Api(app)
+
+
+api.add_resource(resources.GUI, "/", endpoint="gui")
+api.add_resource(resources.UserInfo, "/userinfo", endpoint="userinfo")
 api.add_resource(resources.Requests,
                  "/requests",
                  endpoint="requests")
@@ -37,19 +43,19 @@ api.add_resource(resources.RequestStatus,
                  endpoint="status")
 api.add_resource(resources.Terminator, "/requests/<int:request_id>/terminator",
                  endpoint="terminator")
-
 logger.info("Flask resources atached")
+
+try:
+    utils.init_validation_logs_dir()
+    utils.prepare_remote()
+    controllers.init_controllers()
+    logger.info("Controllers initialized")
+except:
+    logger.exception("Uncaught exception")
+    raise
 
 
 if __name__ == '__main__':
-    try:
-        utils.init_validation_logs_dir()
-        utils.prepare_remote()
-        controllers.init_controllers()
-        logger.info("Controllers initialized")
-        print("Service is about to start.")
-        print("You may wish to check log files sometimes.")
-        app.run(debug=False, use_reloader=False, host='0.0.0.0', port=80)
-    except:
-        logger.exception("Uncaught exception")
-        raise
+    print("Service is about to start.")
+    print("You may wish to check log files sometimes.")
+    app.run(debug=False, use_reloader=False, host='0.0.0.0', port=433)

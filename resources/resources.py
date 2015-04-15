@@ -11,7 +11,7 @@ import os
 import json
 
 from flask.ext.restful import Resource
-from flask import request
+from flask import request, send_from_directory
 
 import controller
 from config import CONFIG
@@ -19,6 +19,16 @@ from common import shared, relmon, controllers
 
 logger = logging.getLogger(__name__)
 logger.addHandler(NullHandler())
+
+
+def authorize(func):
+    """Decorate methods to do authorization"""
+    def decorator(*args, **kwargs):
+        if (request.headers["Adfs-Login"] in CONFIG.AUTHORIZED_USERS):
+            return func(*args, **kwargs)
+        else:
+            return "Forbidden", 403
+    return decorator
 
 
 def add_default_HTTP_returns(func):
@@ -40,6 +50,7 @@ def add_default_HTTP_returns(func):
 
 class Sample(Resource):
 
+    @authorize
     @add_default_HTTP_returns
     def get(self, request_id, category, sample_list, sample_name):
         relmon_request = shared.relmons[request_id]
@@ -48,6 +59,7 @@ class Sample(Resource):
         the_list = the_category["lists"][sample_list]
         return [i for i in the_list if i["name"] == sample_name][0], 200
 
+    @authorize
     @add_default_HTTP_returns
     def put(self, request_id, category, sample_list, sample_name):
         logger.debug("request data: " + json.dumps(request.json))
@@ -69,6 +81,7 @@ class Sample(Resource):
 # TODO: think of other ways to change status internally
 class RequestStatus(Resource):
 
+    @authorize
     @add_default_HTTP_returns
     def put(self, request_id):
         logger.debug("request data: " + json.dumps(request.json))
@@ -85,6 +98,7 @@ class RequestStatus(Resource):
 
 class RequestLog(Resource):
 
+    @authorize
     @add_default_HTTP_returns
     def put(self, request_id):
         relmon_request = shared.relmons[request_id]
@@ -98,6 +112,7 @@ class RequestLog(Resource):
 
 class Request(Resource):
 
+    @authorize
     @add_default_HTTP_returns
     def get(self, request_id):
         return shared.relmons[request_id].to_dict(), 200
@@ -105,6 +120,7 @@ class Request(Resource):
 
 class Requests(Resource):
 
+    @authorize
     @add_default_HTTP_returns
     def get(self):
         requests = []
@@ -113,6 +129,7 @@ class Requests(Resource):
                 requests.append(relmon_request.to_dict())
         return requests, 200
 
+    @authorize
     @add_default_HTTP_returns
     def post(self):
         logger.debug("request data: " + json.dumps(request.json))
@@ -127,6 +144,7 @@ class Requests(Resource):
 class Terminator(Resource):
     """Documentation for Terminator
     """
+    @authorize
     @add_default_HTTP_returns
     def post(self, request_id):
         relmon_request = shared.relmons[request_id]
@@ -139,6 +157,8 @@ class Terminator(Resource):
         controllers.controllers[request_id].terminate()
         return "OK", 200
 
+    @authorize
+    @add_default_HTTP_returns
     def delete(self, request_id):
         shared.relmons[request_id]
         controllers.controllers.pop(request_id)
@@ -148,3 +168,22 @@ class Terminator(Resource):
             os.remove("static/validation_logs/" +
                       str(request_id) + ".log")
         return "OK", 200
+
+
+class UserInfo(Resource):
+    """Documentation for UserInfo
+    """
+    @authorize
+    @add_default_HTTP_returns
+    def get(self):
+        # return session["user"].get("fullname")
+        return request.headers["Adfs-Login"]
+
+
+class GUI(Resource):
+    """Documentation for GUI
+    """
+    @authorize
+    @add_default_HTTP_returns
+    def get(self):
+        return send_from_directory("static", "index.htm")

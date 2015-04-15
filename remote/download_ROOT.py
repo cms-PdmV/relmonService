@@ -27,8 +27,14 @@ parser.add_argument(dest="id_", help="FIXME: id help")
 # parser.add_argument("--dry", dest="dry", action="store_true", default=False)
 args = parser.parse_args()
 
-status, data = utils.httpget(
-    CONFIG.SERVICE_HOST, "/requests/" + str(args.id_))
+# get relmon
+cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
+if (cookie is None):
+    logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
+    exit(1)
+status, data = utils.httpsget(CONFIG.SERVICE_HOST,
+                              "/requests/" + str(args.id_),
+                              headers={"Cookie": cookie})
 print(status)
 print(data)
 if (status != httplib.OK):
@@ -80,21 +86,22 @@ for category in request.categories:
 
             # <- end of file_urls
             # Maybe do something else with the downloaded_count
-            print(file_count)
-            print(sample["run_count"])
             if (file_count == sample["run_count"]):
                 sample["status"] = "downloaded"
-                headers = {
-                    "Content-type": "application/json",
-                    "Accept": "text/plain"}
                 # TODO: handle failures (request)
-                status, data = utils.http(
+                cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
+                if (cookie is None):
+                    logger.error("Failed getting sso cookies for " +
+                                 CONFIG.SERVICE_HOST)
+                    exit(1)
+                status, data = utils.https(
                     "PUT",
                     CONFIG.SERVICE_HOST,
                     ("/requests/" + str(request.id_) + "/categories/" +
                      category["name"] + "/lists/" + lname + "/samples/" +
                      sample["name"]),
-                    data=json.dumps(sample))
+                    data=json.dumps(sample),
+                    headers={"Cookie": cookie})
         # <- end of samples
         # NOTE: same dir for ref and target
         # os.chdir("..")

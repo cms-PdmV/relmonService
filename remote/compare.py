@@ -36,8 +36,13 @@ parser.add_argument(dest="id_", help="FIXME: id help")
 args = parser.parse_args()
 
 # get RelMon
-status, data = utils.httpget(CONFIG.SERVICE_HOST,
-                             "/requests/" + str(args.id_))
+cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
+if (cookie is None):
+    logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
+    exit(1)
+status, data = utils.httpsget(CONFIG.SERVICE_HOST,
+                              "/requests/" + args.id_,
+                              headers={"Cookie": cookie})
 if (status != httplib.OK):
     # FIXME: solve this problem
     exit(1)
@@ -70,11 +75,16 @@ def upload_log():
     if (scp_proc_return != 0):
         # TODO: something more useful
         print("scp fail")
-    status, data = utils.http(
+    cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
+    if (cookie is None):
+        logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
+        exit(1)
+    status, data = utils.https(
         "PUT",
         CONFIG.SERVICE_HOST,
         "/requests/" + str(request.id_) + "/log",
-        data=json.dumps({"value": True}))
+        data=json.dumps({"value": True}),
+        headers={"Cookie": cookie})
     if (status != httplib.OK):
         # FIXME: solve this problem
         print("PUT about log fail")
@@ -83,11 +93,16 @@ def upload_log():
 # TODO: think of other ways for controllers to know about failures/success
 def put_status(status):
     global logFile, request
-    status, data = utils.http(
+    cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
+    if (cookie is None):
+        logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
+        exit(1)
+    status, data = utils.https(
         "PUT",
         CONFIG.SERVICE_HOST,
         "/requests/" + str(request.id_) + "/status",
-        data=json.dumps({"value": status}))
+        data=json.dumps({"value": status}),
+        headers={"Cookie": cookie})
     if (status != httplib.OK):
         # FIXME: solve this problem
         print("konkreciai juokutis")

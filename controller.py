@@ -205,14 +205,3 @@ class Controller(threading.Thread):
         elif (worker_enum == WORKER_CLEANER):
             self.worker = relmon.Cleaner(self.request)
         self.worker.start()
-
-
-class ClassName(object):
-    """Documentation for ClassName
-
-    """
-    def __init__(self, args):
-        super(ClassName, self).__init__()
-        self.args = args
-        
-        
