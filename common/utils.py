@@ -15,7 +15,9 @@ import re
 import json
 import httplib
 
+
 try:
+    import crontab
     import paramiko
 except ImportError:
     pass
@@ -40,6 +42,26 @@ with open(CONFIG.CREDENTIALS_PATH) as cred_file:
 main_path = os.path.realpath(sys.argv[0])
 if (not os.path.isdir(main_path)):
     main_path = os.path.dirname(main_path)
+
+
+def init_authentication_ticket_renewal():
+    logger.info("Setting up kerberos and asf token automatic renewal.")
+    krb_args = ["kinit", CONFIG.USER, "-f", "-k", "-t", CONFIG.KEYTAB_PATH]
+    krb_proc = subprocess.Popen(krb_args)
+    if (krb_proc.wait() != 0):
+        logger.error("Failed getting kerberos token.")
+        return False
+    aklog_proc = subprocess.Popen("aklog")
+    if (aklog_proc.wait() != 0):
+        logger.error("Failed getting afs token.")
+        return True
+    logger.info("Tokens initialized. Preparing crontab...")
+    tab = crontab.CronTab()
+    cron_job = tab.new(" ".join(krb_args) + "; aklog")
+    cron_job.minute.on(0)
+    cron_job.hour.on(0)
+    tab.write()
+    logger.info("Crontab set up: " + tab.render())
 
 
 def init_validation_logs_dir():

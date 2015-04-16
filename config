@@ -5,17 +5,18 @@ time_between_downloads = 600
 time_after_threshold_reached = 1
 
 [strings]
+keytab_path = /afs/cern.ch/user/j/jdaugala/private/jdaugala.keytab
 remote_user = jdaugala
 credentials_path = /afs/cern.ch/user/j/jdaugala/private/credentials
 datatier_check_url = /reqmgr/reqMgr/outputDatasetsByRequestName
 relmon_path = /afs/cern.ch/cms/offline/dqm/ReleaseMonitoring-TEST/jdaugalaSandbox
 dqm_root_url = /dqm/relval/data/browse/ROOT
-key_path = /afs/cern.ch/user/j/jdaugala/.globus/userkey.pem
 wmstats_url = /couchdb/wmstats
+user = jdaugala
 data_file_name = data
 cmsweb_host = cmsweb.cern.ch
 remote_work_dir = /build/jdaugala/relmon
-user = jdaugala
+key_path = /afs/cern.ch/user/j/jdaugala/.globus/userkey.pem
 service_working_dir = /home/relmon/relmon_request_service
 logs_dir = logs
 dbsreader_url = /dbs/prod/global/DBSReader
