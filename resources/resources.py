@@ -24,9 +24,10 @@ logger.addHandler(NullHandler())
 def admin_only(func):
     """Decorate methods to make them accessable only for administrators"""
     def decorator(*args, **kwargs):
-        if (request.headers["Adfs-Login"] in CONFIG.ADMINISTRATORS):
+        try:
+            (request.headers["Adfs-Login"] in CONFIG.ADMINISTRATORS)
             return func(*args, **kwargs)
-        else:
+        except:
             return "Forbidden", 403
     return decorator
 
@@ -34,9 +35,10 @@ def admin_only(func):
 def authorize(func):
     """Decorate methods to do authorization"""
     def decorator(*args, **kwargs):
-        if (request.headers["Adfs-Login"] in CONFIG.AUTHORIZED_USERS):
+        try:
+            (request.headers["Adfs-Login"] in CONFIG.AUTHORIZED_USERS)
             return func(*args, **kwargs)
-        else:
+        except:
             return "Forbidden", 403
     return decorator
 
@@ -132,7 +134,6 @@ class RequestLog(Resource):
             return send_from_directory(
                 CONFIG.LOGS_DIR,
                 (str(request_id) + ".log"),
-                as_attachement=True,
                 attachment_filename=(str(request_id) + ".log"))
         else:
             return "Log file does not exist", 404

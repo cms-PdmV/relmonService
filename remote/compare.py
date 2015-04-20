@@ -40,9 +40,10 @@ cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
 if (cookie is None):
     logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
     exit(1)
-status, data = utils.httpsget(CONFIG.SERVICE_HOST,
-                              "/requests/" + args.id_,
-                              headers={"Cookie": cookie})
+status, data = utils.httpsget(
+    CONFIG.SERVICE_HOST,
+    CONFIG.SERVICE_BASE + "/requests/" + args.id_,
+    headers={"Cookie": cookie})
 if (status != httplib.OK):
     # FIXME: solve this problem
     exit(1)
@@ -50,16 +51,16 @@ request = relmon.RelmonRequest(**json.loads(data))
 
 # work dir and log file
 local_relmon_request = os.path.abspath(
-    "requests/" + str(request.id_))
+    os.path.join("requests", str(request.id_)))
 os.chdir(local_relmon_request)
 
-local_reports = local_relmon_request + "/reports/"
+local_reports = os.path.join(local_relmon_request, "reports")
 
 # TODO: handle failures
 logFile = open(str(request.id_) + ".log", "w")
 os.chmod(str(request.id_) + ".log", 0664)
 
-remote_reports = CONFIG.RELMON_PATH + '/' + request.name + '/'
+remote_reports = os.path.join(CONFIG.RELMON_PATH, request.name)
 
 
 def upload_log():
@@ -71,7 +72,7 @@ def upload_log():
     status, data = utils.https(
         "POST",
         CONFIG.SERVICE_HOST,
-        "/requests/" + str(request.id_) + "/log",
+        CONFIG.SERVICE_BASE + "/requests/" + str(request.id_) + "/log",
         data=open(str(request.id_) + ".log", "rb"),
         headers={"Cookie": cookie})
     if (status != httplib.OK):
@@ -89,13 +90,12 @@ def put_status(status):
     status, data = utils.https(
         "PUT",
         CONFIG.SERVICE_HOST,
-        "/requests/" + str(request.id_) + "/status",
+        CONFIG.SERVICE_BASE + "/requests/" + str(request.id_) + "/status",
         data=json.dumps({"value": status}),
         headers={"Cookie": cookie})
     if (status != httplib.OK):
         # FIXME: solve this problem
-        print("konkreciai juokutis")
-
+        logger.error("Failed updating status")
 
 def finalize_report_generation(status):
     global logFile
@@ -105,7 +105,7 @@ def finalize_report_generation(status):
 
 
 def get_local_subreport_path(category_name, HLT):
-    path = local_reports + category_name
+    path = os.path.join(local_reports, category_name)
     if (HLT):
         path += "_HLT"
     return path
@@ -145,7 +145,7 @@ def compress(category_name, HLT):
 
 def move_to_afs(category_name, HLT):
     local_subreport = get_local_subreport_path(category_name, HLT)
-    remote_subreport = remote_reports + category_name
+    remote_subreport = os.path.join(remote_reports, category_name)
     if (HLT):
         remote_subreport += "_HLT"
     # TODO: handle failures

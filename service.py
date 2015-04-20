@@ -10,6 +10,7 @@ from flask.ext.cors import CORS
 
 from common import utils, controllers
 from resources import resources
+from config import CONFIG
 
 logging.config.fileConfig("logging.ini", disable_existing_loggers=False)
 logger = logging.getLogger(__name__)
@@ -58,4 +59,6 @@ except:
 if __name__ == '__main__':
     print("Service is about to start.")
     print("You may wish to check log files sometimes.")
-    app.run(debug=False, use_reloader=False, host='0.0.0.0', port=433)
+    app.run(debug=False, use_reloader=False, host='0.0.0.0', port=443,
+            ssl_context=(CONFIG.HOST_CERT_PATH,
+                         CONFIG.HOST_KEY_PATH))

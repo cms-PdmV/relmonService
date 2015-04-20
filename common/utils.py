@@ -45,19 +45,31 @@ if (not os.path.isdir(main_path)):
 
 
 def init_authentication_ticket_renewal():
-    logger.info("Setting up kerberos and asf token automatic renewal.")
+    logger.info("Setting up kerberos and afs token automatic renewal.")
     krb_args = ["kinit", CONFIG.USER, "-f", "-k", "-t", CONFIG.KEYTAB_PATH]
-    krb_proc = subprocess.Popen(krb_args)
+    krb_proc = subprocess.Popen(krb_args, subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+    stdout, stderr = krb_proc.communicate()
+    if stdout:
+        logger.info(stdout)
+    if stderr:
+        logger.error(stderr)
     if (krb_proc.wait() != 0):
         logger.error("Failed getting kerberos token.")
         return False
-    aklog_proc = subprocess.Popen("aklog")
+    aklog_proc = subprocess.Popen("aklog", subprocess.PIPE,
+                                  stderr=subprocess.PIPE)
+    stdout, stderr = aklog_proc.communicate()
+    if stdout:
+        logger.info(stdout)
+    if stderr:
+        logger.error(stderr)
     if (aklog_proc.wait() != 0):
         logger.error("Failed getting afs token.")
         return True
     logger.info("Tokens initialized. Preparing crontab...")
     tab = crontab.CronTab()
-    cron_job = tab.new(" ".join(krb_args) + "; aklog")
+    cron_job = tab.new(" ".join(krb_args) + "; klist; aklog")
     cron_job.minute.on(0)
     cron_job.hour.on(0)
     tab.write()
@@ -73,7 +85,7 @@ def init_validation_logs_dir():
 
 
 def prepare_remote():
-    logger.info("Preparing remote maschine")
+    logger.info("Preparing remote machine")
     logger.debug("Local __main__ path: " + main_path)
     config.setstring("SERVICE_WORKING_DIR", main_path)
     config.write()
@@ -82,7 +94,7 @@ def prepare_remote():
                       password=credentials["pass"])
     logger.info("Connected to " + CONFIG.REMOTE_HOST)
     sftp = paramiko.SFTPClient.from_transport(transport)
-    # remove files on remote maschine
+    # remove files on remote machine
     logger.info("Removing old files on remote machine")
     for fattr in sftp.listdir_attr(CONFIG.REMOTE_WORK_DIR):
         if (stat.S_ISREG(fattr.st_mode)):
@@ -105,8 +117,8 @@ def prepare_remote():
                     CONFIG.REMOTE_WORK_DIR, "common", fattr.filename))
             except IOError:
                 pass
-    # put files on remote maschine
-    logger.info("Uploading files to remote maschine")
+    # put files on remote machine
+    logger.info("Uploading files to remote machine")
     sftp.put(os.path.join(main_path, "config.py"),
              os.path.join(CONFIG.REMOTE_WORK_DIR, "config.py"))
     sftp.put(os.path.join(main_path, "config"),
@@ -121,7 +133,7 @@ def prepare_remote():
                  os.path.join(CONFIG.REMOTE_WORK_DIR, "common", fname))
     sftp.close()
     transport.close()
-    logger.info("Remote maschine prepared")
+    logger.info("Remote machine prepared")
 
 
 def httpget(host, url, headers={}, port=80):

@@ -1,7 +1,6 @@
 /*
  * angular js controllers for relmon request service frontend.
  */
-var SERVICE_ADDRESS = "https://188.184.185.27"
 
 var relmon_request_service_frontend = angular.module(
     "relmon_request_service_frontend",
@@ -127,7 +126,7 @@ function Request_controller($http, $modal, $location) {
 
     function submit_request(post_data) {
         http_request_prepare();
-        $http.post("https://" + $location.host() + "/requests",
+        $http.post("requests",
                    post_data)
             .success(http_post_success)
             .error(http_post_error)
@@ -168,7 +167,7 @@ function Request_controller($http, $modal, $location) {
     
     this.get_requests = function() {
         http_request_prepare();
-        $http.get("https://" + $location.host() + "/requests")
+        $http.get("requests")
             .success(function(data, status){
                 me.relmon_requests = data;
             })
@@ -183,7 +182,7 @@ function Request_controller($http, $modal, $location) {
 
     this.get_user_info = function() {
         http_request_prepare();
-        $http.get("https://" + $location.host() + "/userinfo")
+        $http.get("userinfo")
             .success(function(data, status){
                 me.user = data;
             })
@@ -221,7 +220,7 @@ function Request_controller($http, $modal, $location) {
             function() {
                 http_request_prepare();
                 me.posting_terminator[relmon_request["id_"]] = true;
-                $http.post("https://" + $location.host() + "/requests/" + relmon_request["id_"] + "/terminator")
+                $http.post("requests/" + relmon_request["id_"] + "/terminator")
                     .success(http_post_success)
                     .error(http_post_error)
                     .finally(function(){

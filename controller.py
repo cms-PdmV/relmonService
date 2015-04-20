@@ -133,7 +133,7 @@ class Controller(threading.Thread):
                 return False
             shared.update(self.request.id_)
             if (self.worker.ret_code != 0):
-                logger.error("Downloader on remote maschine failed")
+                logger.error("Downloader on remote machine failed")
                 self.request.get_access()
                 try:
                     self.request.status = "failed"
@@ -158,7 +158,7 @@ class Controller(threading.Thread):
             return False
         shared.update(self.request.id_)
         if (self.worker.ret_code != 0):
-            logger.error("Report generating on remote maschine failed")
+            logger.error("Report generating on remote machine failed")
             self.request.get_access()
             try:
                 self.request.status = "failed"
@@ -185,7 +185,7 @@ class Controller(threading.Thread):
         self._start_worker(WORKER_CLEANER)
         self.worker.join()
         if (self.worker.ret_code != 0):
-            logger.error("Cleaner on remote maschine failed")
+            logger.error("Cleaner on remote machine failed")
             self.request.get_access()
             try:
                 self.request.status = "failed"

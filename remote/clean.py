@@ -29,9 +29,10 @@ cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
 if (cookie is None):
     logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
     exit(1)
-status, data = utils.httpsget(CONFIG.SERVICE_HOST,
-                              "/requests/" + args.id_,
-                              headers={"Cookie": cookie})
+status, data = utils.httpsget(
+    CONFIG.SERVICE_HOST,
+    CONFIG.SERVICE_BASE + "/requests/" + args.id_,
+    headers={"Cookie": cookie})
 if (status != httplib.OK):
     # FIXME: solve this problem
     exit(1)
@@ -46,23 +47,24 @@ def send_delete_terminator():
     status, data = utils.https(
         "DELETE",
         CONFIG.SERVICE_HOST,
-        "/requests/" + str(request.id_) + "/terminator",
+        CONFIG.SERVICE_BASE + "/requests/" + str(request.id_) +
+        "/terminator",
         headers={"Cookie": cookie})
     if (status != httplib.OK):
         # FIXME: solve this problem
         print("konkreciai juokutis")
 
 # do cleaning
-if (os.path.exists("requests/" + str(request.id_))):
-    shutil.rmtree("requests/" + str(request.id_))
-if (not os.path.exists(CONFIG.RELMON_PATH + '/' + request.name + '/')):
+if (os.path.exists(os.path.join("requests", str(request.id_)))):
+    shutil.rmtree(os.path.join("requests", str(request.id_)))
+if (not os.path.exists(os.path.join(CONFIG.RELMON_PATH, request.name))):
     send_delete_terminator()
     # exit normally
     exit()
 all_categories_removed = True
 for category in request.categories:
-    cat_report_path = (
-        CONFIG.RELMON_PATH + '/' + request.name + '/' + category["name"])
+    cat_report_path = os.path.join(CONFIG.RELMON_PATH, request.name,
+                                   category["name"])
     if (category["name"] == "Generator" or category["HLT"] != "only"):
         if (os.path.exists(cat_report_path)):
             if (len(category["lists"]["target"]) > 0):
@@ -77,5 +79,5 @@ for category in request.categories:
             else:
                 all_categories_removed = False
 if (all_categories_removed):
-    shutil.rmtree(CONFIG.RELMON_PATH + '/' + request.name + '/')
+    shutil.rmtree(os.path.join(CONFIG.RELMON_PATH, request.name))
 send_delete_terminator()
