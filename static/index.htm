@@ -22,7 +22,8 @@
          class="container"
          ng-controller="Request_controller as request_controller">
       <!-- BEGIN new RelMon request part -->
-      <div class="page-header" ng-init="new_request_collapsed = true">
+      <div class="page-header" ng-init="new_request_collapsed = true" style="overflow:hidden">
+        <span style="float: right">Logged in as: {{request_controller.user.name}} <a href="https://login.cern.ch/adfs/ls/?wa=wsignout1.0">Logout</a></span>
         <h1>RelMon service</h1>
       </div>
       <h2>New RelMon request (campaign)

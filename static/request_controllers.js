@@ -25,6 +25,7 @@ function Request_controller($http, $modal, $location) {
     this.new_request_threshold = 100;
     this.relmon_requests = [];
     this.posting_terminator = {};
+    this.user = {};
 
 // private variables
     var http_requests_in_progress = 0;
@@ -110,14 +111,6 @@ function Request_controller($http, $modal, $location) {
     function http_request_prepare() {
         http_requests_in_progress++;
     }
-    var http_get_success = function(data, status){
-        me.relmon_requests = data;
-        console.log("Successful GET.");
-    };
-    var http_get_error = function(data, status){
-        me.relmon_requests = "";
-        me.open_error_modal("Server responded with status code: " + status + "\n" + data);
-    };
     var http_post_success = function(data, status){
         console.log("Successful POST.");
         me.get_requests();
@@ -172,15 +165,37 @@ function Request_controller($http, $modal, $location) {
             return "";
         }
     };
-
+    
     this.get_requests = function() {
         http_request_prepare();
         $http.get("https://" + $location.host() + "/requests")
-            .success(http_get_success)
-            .error(http_get_error)
+            .success(function(data, status){
+                me.relmon_requests = data;
+            })
+            .error(function(data, status){
+                me.relmon_requests = "";
+                me.open_error_modal("Getting requests.\n" +
+                                    "Server responded with status code: " +
+                                    status + "\n" + data);
+            })
             .finally(http_finally);
     };
 
+    this.get_user_info = function() {
+        http_request_prepare();
+        $http.get("https://" + $location.host() + "/userinfo")
+            .success(function(data, status){
+                me.user = data;
+            })
+            .error(function(data, status){
+                me.user.name = "unidentified";
+                me.open_error_modal("Getting user information.\n" +
+                                    "Server responded with status code: "
+                                    + status + "\n" + data);
+            })
+            .finally(http_finally);
+    };
+    
     this.try_submit = function() {
         try {
             post_data = prepare_new_request_post_data();
@@ -245,9 +260,11 @@ function Request_controller($http, $modal, $location) {
 
 // init stuff
     reset_sample_inputs();
+    this.get_user_info()
     this.get_requests();
-
 }
+
+// modal controllers
 
 relmon_request_service_frontend.controller(
     "Confirm_modal_controller", function($scope, $modalInstance, message) {

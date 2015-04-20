@@ -203,7 +203,7 @@ class UserInfo(Resource):
     @add_default_HTTP_returns
     def get(self):
         return {"username": request.headers["Adfs-Login"],
-                "name": request.headers["Adfs-Name"],
+                "name": request.headers["Adfs-Fullname"],
                 "group": request.headers["Adfs-Group"],
                 "email": request.headers["Adfs-Email"]}
 
