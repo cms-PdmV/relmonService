@@ -104,6 +104,8 @@ def finalize_report_generation(status):
     logFile.close()
     upload_log()
     put_status(status)
+    os.chdir(os.dirname(local_relmon_request))
+    shutil.rmtree(local_relmon_request)
 
 
 def get_local_subreport_path(category_name, HLT):
@@ -175,4 +177,3 @@ for category in request.categories:
             exit(1)
         move_to_afs(category["name"], True)
 finalize_report_generation("finished")
-# TODO: cleanup
