@@ -97,7 +97,9 @@ def put_status(status):
         # FIXME: solve this problem
         logger.error("Failed updating status")
 
+
 def finalize_report_generation(status):
+    logger.info("Finalizing RelMon report production with satus: " + status)
     global logFile
     logFile.close()
     upload_log()
@@ -105,7 +107,7 @@ def finalize_report_generation(status):
 
 
 def get_local_subreport_path(category_name, HLT):
-    path = os.path.join(local_reports, category_name)
+    path = os.path.join(local_reports, category_name + "Report")
     if (HLT):
         path += "_HLT"
     return path
