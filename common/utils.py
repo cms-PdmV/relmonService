@@ -69,7 +69,7 @@ def init_authentication_ticket_renewal():
         return True
     logger.info("Tokens initialized. Preparing crontab...")
     tab = crontab.CronTab()
-    cron_job = tab.new(" ".join(krb_args) + "; klist; aklog")
+    cron_job = tab.new(" ".join(krb_args) + "; aklog")
     cron_job.minute.on(0)
     cron_job.hour.on(0)
     tab.write()
@@ -240,7 +240,7 @@ def get_sso_cookie(url):
     sso_cookie_proc_return = sso_cookie_proc.wait()
     if (sso_cookie_proc_return != 0):
         logger.error("Getting cern sso cookie for " + url +
-                     " failed. Code:" + sso_cookie_proc_return)
+                     " failed. Code:" + str(sso_cookie_proc_return))
         return None
     with open("cookie.txt", "r") as cookiefile:
         content = cookiefile.read()

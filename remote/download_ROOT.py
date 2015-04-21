@@ -90,7 +90,7 @@ for category in request.categories:
                 if (cookie is None):
                     logger.error("Failed getting sso cookies for " +
                                  CONFIG.SERVICE_HOST)
-                    exit(1)
+                    # exit(1)
                 status, data = utils.https(
                     "PUT",
                     CONFIG.SERVICE_HOST,
