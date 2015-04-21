@@ -101,18 +101,16 @@
                   <a  href="requests/{{request.id_}}/log">Log file</a>
                 </li>
                 <li class="list-group-item">
-                  <button ng-if="!request_controller.posting_terminator[request.id_]"
-                          class="btn btn-danger btn-xs"
+                  <button class="btn btn-danger btn-xs"
                           ng-class="request.status=='terminating' ? 'disabled' : ''"
                           ng-click="request_controller.post_terminator(request)">
                     Terminate
                   </button>
-                  <progressbar ng-if="request_controller.posting_terminator[request.id_]"
-                               class="progress-striped active"
-                               max="1" value="1"
-                               type="danger">
-                    Creating terminator...
-                  </progressbar>
+                  <button class="btn btn-xs"
+                          ng-class="request.status=='finished' ? '' : 'disabled'"
+                          ng-click="request_controller.post_closer(request)">
+                    Close
+                  </button>
                 </li>
               </ul>
             </td>

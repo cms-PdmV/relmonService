@@ -197,6 +197,22 @@ class Terminator(Resource):
         return "OK", 200
 
 
+class Closer(Resource):
+    """Documentation for Closer
+    """
+    @authorize
+    @add_default_HTTP_returns
+    def post(self, request_id):
+        relmon_request = shared.relmons[request_id]
+        if (relmon_request.status != "finished"):
+            return "RelMon request not finished", 400
+        controllers.controllers.pop(request_id)
+        shared.drop(request_id)
+        if (os.path.exists(CONFIG.LOGS_DIR + str(request_id) + ".log")):
+            os.remove(CONFIG.LOGS_DIR + str(request_id) + ".log")
+        return "OK", 200
+
+
 class UserInfo(Resource):
     """Documentation for UserInfo
     """

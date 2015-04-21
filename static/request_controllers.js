@@ -23,7 +23,6 @@ function Request_controller($http, $modal, $location) {
     this.new_request_name = "";
     this.new_request_threshold = 100;
     this.relmon_requests = [];
-    this.posting_terminator = {};
     this.user = {};
 
 // private variables
@@ -214,23 +213,38 @@ function Request_controller($http, $modal, $location) {
 
     this.post_terminator = function(relmon_request) {
         var modal_inst = this.open_confirm_modal(
-            "Campaign " + relmon_request["name"] +
-            " is going to be terminated.\nDo you want to proceed?")
+            "Campaign '" + relmon_request["name"] + "' is going to be terminated. " +
+            "Existing comparison will be deleted. \nDo you want to proceed?")
         modal_inst.result.then(
             function() {
                 http_request_prepare();
-                me.posting_terminator[relmon_request["id_"]] = true;
                 $http.post("requests/" + relmon_request["id_"] + "/terminator")
                     .success(http_post_success)
                     .error(http_post_error)
                     .finally(function(){
-                        me.posting_terminator[relmon_request["id_"]] = false;
                         me.http_finally();
                     });
             }
         );
     }
 
+    this.post_closer = function(relmon_request) {
+        var modal_inst = this.open_confirm_modal(
+            "'" + relmon_request["name"] + "' records are going to be removed " +
+            "from RelMon service. \nDo you want to proceed?")
+        modal_inst.result.then(
+            function() {
+                http_request_prepare();
+                $http.post("requests/" + relmon_request["id_"] + "/close")
+                    .success(http_post_success)
+                    .error(http_post_error)
+                    .finally(function(){
+                        me.http_finally();
+                    });
+            }
+        );
+    }
+    
     this.open_confirm_modal = function(message) {
         var modal_inst = $modal.open( {
             templateUrl: "modals/Confirm_modal.htm",

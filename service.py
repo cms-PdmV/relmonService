@@ -43,6 +43,8 @@ api.add_resource(resources.RequestStatus,
                  endpoint="status")
 api.add_resource(resources.Terminator, "/requests/<int:request_id>/terminator",
                  endpoint="terminator")
+api.add_resource(resources.Closer, "/requests/<int:request_id>/close",
+                 endpoint="close")
 logger.info("Flask resources atached")
 
 try:
