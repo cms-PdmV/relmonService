@@ -104,7 +104,7 @@ def finalize_report_generation(status):
     logFile.close()
     upload_log()
     put_status(status)
-    os.chdir(os.dirname(local_relmon_request))
+    os.chdir(os.path.dirname(local_relmon_request))
     shutil.rmtree(local_relmon_request)
 
 
