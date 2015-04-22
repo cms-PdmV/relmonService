@@ -109,7 +109,12 @@ def finalize_report_generation(status):
 
 
 def get_local_subreport_path(category_name, HLT):
-    path = os.path.join(local_reports, category_name + "Report")
+    name = category_name
+    if ("PU" in category_name):
+        name = name.split('_')[0] + "Report_PU"
+    else:
+        name += "Report"
+    path = os.path.join(local_reports, name)
     if (HLT):
         path += "_HLT"
     return path
@@ -149,9 +154,8 @@ def compress(category_name, HLT):
 
 def move_to_afs(category_name, HLT):
     local_subreport = get_local_subreport_path(category_name, HLT)
-    remote_subreport = os.path.join(remote_reports, category_name)
-    if (HLT):
-        remote_subreport += "_HLT"
+    remote_subreport = os.path.join(remote_reports,
+                                    os.path.basename(local_subreport))
     # TODO: handle failures
     if (os.path.exists(remote_subreport)):
         shutil.rmtree(remote_subreport)
