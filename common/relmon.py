@@ -32,8 +32,8 @@ try:
     with open(CONFIG.CREDENTIALS_PATH) as cred_file:
         logger.info("Parsing credentials")
         credentials = json.load(cred_file)
-    credentials["user"]
-    credentials["pass"]
+    credentials["username"]
+    credentials["password"]
 except:
     logger.exception("Failed credentials reading/parsing")
     raise

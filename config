@@ -1,6 +1,6 @@
 [lists]
-administrators = ["jdaugala"]
-authorized_users = ["jdaugala",
+administrators = ["pdmvserv", "anorkus"]
+authorized_users = ["pdmvserv",
 	"anorkus"]
 final_relmon_statuses = [
 	"failed",
@@ -18,31 +18,31 @@ final_wm_statuses = [
 
 [strings]
 dbsreader_url = /dbs/prod/global/DBSReader
-cmsweb_host = cmsweb.cern.ch
-remote_cmssw_dir = /build/jdaugala/CMSSW_7_4_0_pre8
-remote_user = jdaugala
-remote_work_dir = /build/jdaugala/relmon
-host_cert_path = /etc/pki/tls/certs/host.cert
-key_path = /afs/cern.ch/user/j/jdaugala/.globus/userkey.pem
-service_working_dir = /home/relmon/relmon_request_service
+keytab_path = /afs/cern.ch/user/p/pdmvserv/private/pdmvserv.keytab
+remote_cmssw_dir = /build/anorkus/RelMon/CMSSW/gitDEV/CMSSW_7_4_0_pre8
+remote_user = pdmvserv
+host_cert_path = /etc/pki/tls/certs/localhost.crt
+remote_work_dir = /build/pdmvserv/relmon
+key_path = /afs/cern.ch/user/p/pdmvserv/.globus/userkey.pem
+service_working_dir = /home/relmonsvc/relmonService
 dqm_root_url = /dqm/relval/data/browse/ROOT
 data_file_name = data
 logs_dir = logs
-user = jdaugala
-keytab_path = /home/private/jdaugala.keytab
+user = pdmvserv
+cmsweb_host = cmsweb.cern.ch
 wmstats_url = /couchdb/wmstats
-credentials_path = /afs/cern.ch/user/j/jdaugala/private/credentials
+credentials_path = /afs/cern.ch/user/p/pdmvserv/private/credentials_json.txt
 datatier_check_url = /reqmgr/reqMgr/outputDatasetsByRequestName
-relmon_path = /afs/cern.ch/cms/offline/dqm/ReleaseMonitoring-TEST/jdaugalaSandbox
+relmon_path = /afs/cern.ch/cms/offline/dqm/ReleaseMonitoring-TEST
 service_base = /
-host_key_path = /etc/pki/tls/private/privkey.pem
-certificate_path = /afs/cern.ch/user/j/jdaugala/.globus/usercert.pem
+host_key_path = /etc/pki/tls/private/localhost.key
+certificate_path = /afs/cern.ch/user/p/pdmvserv/.globus/usercert.pem
 remote_host = cmsdev04.cern.ch
-service_host = mycomputingunit1.cern.ch
+service_host = vocms085.cern.ch
 
 [ints]
 time_between_status_updates = 180
-service_port = 80
+service_port = 8080
 time_between_downloads = 600
 time_after_threshold_reached = 1
 

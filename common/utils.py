@@ -90,8 +90,8 @@ def prepare_remote():
     config.setstring("SERVICE_WORKING_DIR", main_path)
     config.write()
     transport = paramiko.Transport((CONFIG.REMOTE_HOST, 22))
-    transport.connect(username=credentials["user"],
-                      password=credentials["pass"])
+    transport.connect(username=credentials["username"],
+                      password=credentials["password"])
     logger.info("Connected to " + CONFIG.REMOTE_HOST)
     sftp = paramiko.SFTPClient.from_transport(transport)
     # remove files on remote machine
