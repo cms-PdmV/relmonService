@@ -305,8 +305,8 @@ class SSHWorker(Worker):
         logger.info("SSHWorker run " + self.command)
         try:
             self.ssh_client.connect(CONFIG.REMOTE_HOST,
-                                    username=credentials["user"],
-                                    password=credentials["pass"])
+                                    username=credentials["username"],
+                                    password=credentials["password"])
             # NOTE exec_command timeout does not work. Think of something..
             (_, stdout, stderr) = self.ssh_client.exec_command(self.command)
             self.ret_code = stdout.channel.recv_exit_status()
