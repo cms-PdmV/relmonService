@@ -153,8 +153,8 @@ def httpsget(host,
              url,
              headers={},
              port=443,
-             certpath=os.getenv('X509_USER_PROXY'),
-             keypath=os.getenv('X509_USER_PROXY'),
+             certpath=CONFIG.CERTIFICATE_PATH,
+             keypath=CONFIG.KEY_PATH,
              password=None):
     logger.info("HTTPS GET " + host + url)
     conn = httplib.HTTPSConnection(host=host,
@@ -176,8 +176,8 @@ def httpsget_large_file(filepath,
                         url,
                         headers={},
                         port=443,
-                        certpath=os.getenv('X509_USER_PROXY'),
-                        keypath=os.getenv('X509_USER_PROXY'),
+                        certpath=CONFIG.CERTIFICATE_PATH,
+                        keypath=CONFIG.KEY_PATH,
                         password=None):
     logger.info("HTTPS GET large file " + host + url +
                 " to file '" + filepath + "'")
