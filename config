@@ -1,7 +1,7 @@
 [lists]
 administrators = ["pdmvserv", "anorkus"]
 authorized_users = ["pdmvserv",
-	"anorkus", "franzoni", "srimanob", "boudoul", "heli"]
+	"anorkus", "franzoni", "srimanob", "boudoul", "heli", "woodson"]
 final_relmon_statuses = [
 	"failed",
 	"terminating",
