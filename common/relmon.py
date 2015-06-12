@@ -276,7 +276,7 @@ class StatusUpdater(Worker):
                 self.request.get_access()
                 sample["root_count"] = len(matches)
                 if (len(matches) > 0 and
-                    len(matches) == sample["run_count"]):
+                    len(matches) >= sample["run_count"]):
                     # then:
                     sample["status"] = "ROOT"
                 elif (CONFIG.IGNORE_NOROOT_WORKFLOWS and
