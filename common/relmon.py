@@ -108,7 +108,7 @@ class RelmonRequest():
     def is_download_ready(self):
         frac_ROOT = self.sample_fraction(
             ["ROOT", "downloaded"], ["NoDQMIO", "NoROOT"])
-        frac_threshold = fractions.Fraction(self.threshold, 100)
+        frac_threshold = fractions.Fraction( int(self.threshold), 100)
         return frac_ROOT >= frac_threshold
 
     def is_ROOT_100(self):
