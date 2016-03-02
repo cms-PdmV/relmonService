@@ -32,12 +32,10 @@ cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
 if (cookie is None):
     logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
     exit(1)
-status, data = utils.httpget(
-    CONFIG.SERVICE_HOST, CONFIG.SERVICE_BASE
-    +   "requests/" + str(args.id_), port=8080)
-    # headers={"Cookie": cookie})
-logger.debug("printing status:" + str(status))
-logger.debug("printing httplib.OK" + str(httplib.OK))
+status, data = utils.httpsget(
+    CONFIG.SERVICE_HOST,
+    CONFIG.SERVICE_BASE + "/requests/" + str(args.id_),
+    headers={"Cookie": cookie})
 if (status != httplib.OK):
     # FIXME: solve this problem
     logger.error("Failed getting RelMon request. Status: " + str(status))
@@ -95,10 +93,6 @@ for category in request.categories:
                                  CONFIG.SERVICE_HOST)
                     # exit(1)
 
-                logger.debug("issivedu cia ta linka")
-                logger.debug("cia:::::: " + str(status))
-                logger.debug("will https: PUT %s%srequests/%s/categories/%s/lists/%s/samples/%s" %(CONFIG.SERVICE_HOST, 
-                    CONFIG.SERVICE_BASE, str(request.id_), category["name"], lname, sample["name"]))
                 status, data = utils.https(
                     "PUT",
                     CONFIG.SERVICE_HOST,
@@ -106,7 +100,7 @@ for category in request.categories:
                     str(request.id_) + "/categories/" + category["name"] +
                     "/lists/" + lname + "/samples/" + sample["name"],
                     data=json.dumps(sample), port=8080)
-                    #headers={"Cookie": cookie})
+                    headers={"Cookie": cookie})
         # <- end of samples
         # NOTE: same dir for ref and target
         # os.chdir("..")

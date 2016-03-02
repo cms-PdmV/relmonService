@@ -17,7 +17,7 @@ import httplib
 
 
 try:
-    # import crontab
+    import crontab
     import paramiko
 except ImportError as ex:
     print "importing failed...."+ str(ex)
@@ -25,7 +25,6 @@ except ImportError as ex:
 
 import config
 from config import CONFIG
-
 
 HYPERLINK_REGEX = re.compile(r"href=['\"]([-\._a-zA-Z/\d]*)['\"]")
 SAMLIDP_REGEX = re.compile(r"(_saml_idp)\s+([a-zA-z\d_]+)")
@@ -68,13 +67,13 @@ def init_authentication_ticket_renewal():
     if (aklog_proc.wait() != 0):
         logger.error("Failed getting afs token.")
         return True
-    # logger.info("Tokens initialized. Preparing crontab...")
-    # tab = crontab.CronTab()
-    # cron_job = tab.new(" ".join(krb_args) + "; aklog")
-    # cron_job.minute.on(0)
-    # cron_job.hour.on(0)
-    # tab.write()
-    # logger.info("Crontab set up: " + tab.render())
+    logger.info("Tokens initialized. Preparing crontab...")
+    tab = crontab.CronTab()
+    cron_job = tab.new(" ".join(krb_args) + "; aklog")
+    cron_job.minute.on(0)
+    cron_job.hour.on(0)
+    tab.write()
+    logger.info("Crontab set up: " + tab.render())
 
 
 def init_validation_logs_dir():

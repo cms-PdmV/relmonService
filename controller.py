@@ -101,8 +101,9 @@ class Controller(threading.Thread):
                     self._clean()
                 return False
             shared.update(self.request.id_)
-            if (self.request.status in CONFIG.FINAL_RELMON_STATUSES):
-                return False
+            #Commented, for a while. Because we don't want to make statuses Failed.
+            # if (self.request.status in CONFIG.FINAL_RELMON_STATUSES):
+            #     return False
             if (self.request.is_download_ready()):
                 logger.info("RR download ready")
                 return True

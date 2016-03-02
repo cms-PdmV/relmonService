@@ -249,11 +249,6 @@ class UserInfo(Resource):
     @authorize
     @add_default_HTTP_returns
     def get(self):
-        # #Fake data to get access        
-        # return {"username" : "asilale",
-        #         "name" : "aivaras",
-        #         "group" : "cmsdevpevtev",
-        #         "email" : "asilale@cern.ch"}
         return {"username": request.headers["Adfs-Login"],
                "name": request.headers["Adfs-Fullname"],
                "group": request.headers["Adfs-Group"],
