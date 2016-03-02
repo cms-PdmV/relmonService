@@ -17,9 +17,10 @@ import httplib
 
 
 try:
-    import crontab
+    # import crontab
     import paramiko
-except ImportError:
+except ImportError as ex:
+    print "importing failed...."+ str(ex)
     pass
 
 import config
@@ -67,13 +68,13 @@ def init_authentication_ticket_renewal():
     if (aklog_proc.wait() != 0):
         logger.error("Failed getting afs token.")
         return True
-    logger.info("Tokens initialized. Preparing crontab...")
-    tab = crontab.CronTab()
-    cron_job = tab.new(" ".join(krb_args) + "; aklog")
-    cron_job.minute.on(0)
-    cron_job.hour.on(0)
-    tab.write()
-    logger.info("Crontab set up: " + tab.render())
+    # logger.info("Tokens initialized. Preparing crontab...")
+    # tab = crontab.CronTab()
+    # cron_job = tab.new(" ".join(krb_args) + "; aklog")
+    # cron_job.minute.on(0)
+    # cron_job.hour.on(0)
+    # tab.write()
+    # logger.info("Crontab set up: " + tab.render())
 
 
 def init_validation_logs_dir():
@@ -268,12 +269,17 @@ def get_workload_manager_status(sample_name):
         data = json.loads(data)
         # FIXME: take status with most reecent 'update-time', instead
         # of taking last element
-        wm_status = (
-            data["rows"][0]["doc"]["request_status"][-1]["status"])
+        ##for non existing wf and those which were removed from wmstats
+        if 'doc' in data["rows"][0] and data["rows"][0]['doc'] != None:
+            logger.debug("data rows 0: " + str(data["rows"][0]))
+            wm_status = (
+                    data["rows"][0]["doc"]["request_status"][-1]["status"])
+        else:
+            wm_status = "wf doesn't exist"
         return wm_status
     except (ValueError, LookupError):
         logger.exception("get_workload_manager_status returning with error")
-        return None
+        return None 
 
 
 def get_ROOT_file_urls(CMSSW, category_name):

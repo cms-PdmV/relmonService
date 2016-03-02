@@ -24,7 +24,11 @@ function Request_controller($http, $modal, $location) {
     this.new_request_threshold = 100;
     this.relmon_requests = [];
     this.user = {};
-
+    this.new_request_collapsed = true;
+    this.edit_button_show = false;
+    this.internal_id;
+    this.action_name = "Submit";
+    this.old_name = "";
 // private variables
     var http_requests_in_progress = 0;
     var me = this;
@@ -123,16 +127,25 @@ function Request_controller($http, $modal, $location) {
         me.http_requests_in_progress--;
     };
 
-    function submit_request(post_data) {
-        http_request_prepare();
-        $http.post("requests",
-                   post_data)
+    function submit_request() {
+        http_request_prepare()
+        if (typeof arguments[1] !== 'undefined') {
+            $http.post("request/edit/" + arguments[1],
+                    arguments[0])
             .success(http_post_success)
             .error(http_post_error)
             .finally(http_finally);
+        } else {
+            $http.post("requests",
+                    arguments[0])
+            .success(http_post_success)
+            .error(http_post_error)
+            .finally(http_finally);
+        }
         reset_sample_inputs();
     }
-    // public methods
+
+       // public methods
 
     this.sample_count_by_status = function(samples, status) {
         count = 0
@@ -194,14 +207,14 @@ function Request_controller($http, $modal, $location) {
             .finally(http_finally);
     };
     
-    this.try_submit = function() {
+    this.try_submit = function(id) {
         try {
             post_data = prepare_new_request_post_data();
             // TODO: format post_data text
             var modal_inst = this.open_confirm_modal(post_data);
             modal_inst.result.then(
                 function() {
-                    return submit_request(post_data);});
+                    return submit_request(post_data, id);});
         } catch (e) {
             if (e instanceof Request_controller_exception) {
                 this.open_error_modal(e.message);
@@ -243,6 +256,35 @@ function Request_controller($http, $modal, $location) {
                     });
             }
         );
+    }
+
+    this.post_edit = function(relmon_request, index) {
+        reset_sample_inputs();
+        $http.get("requests/" + relmon_request).success(function(data, status){
+            _.each(data.categories, function(val, categIndex){
+                correctIndex = report_categories.indexOf(val.name);
+                _.each(data.categories[categIndex].lists, function(val, listIndex){
+                    _.each(data.categories[categIndex].lists[listIndex], function(val){
+                        me.sample_inputs[correctIndex].lists[listIndex].data += val.name + "\n";
+                    })
+                })
+            })
+            me.old_name = data.name;
+            me.new_request_name = data.name;
+            me.new_request_collapsed = false;
+            if (data.name == me.new_request_name) {
+                me.method_name = "edit";    
+            }
+        });
+        me.internal_id = relmon_request;
+    }
+
+    this.checkEditOrSubmit = function(){
+        if ((me.new_request_name + "") == me.old_name) {
+            me.action_name = "Edit"
+        } else {
+            me.action_name = "Submit"
+        }
     }
     
     this.open_confirm_modal = function(message) {

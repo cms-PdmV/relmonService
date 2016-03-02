@@ -1,4 +1,4 @@
-"""Relmon request service. Automating relmon reports production."""
+"""Relmon request service. Automating relmon reports production.""",
 
 import sys
 import logging
@@ -31,6 +31,9 @@ api.add_resource(resources.Requests,
 api.add_resource(resources.Request,
                  "/requests/<int:request_id>",
                  endpoint="request")
+api.add_resource(resources.Edit,
+                 "/request/edit/<int:request_id>",
+                 endpoint="request/edit")
 api.add_resource(resources.Sample,
                  "/requests/<int:request_id>/categories/<string:category>/" +
                  "lists/<string:sample_list>/samples/<string:sample_name>",
@@ -61,6 +64,6 @@ except:
 if __name__ == '__main__':
     print("Service is about to start.")
     print("You may wish to check log files sometimes.")
-    app.run(debug=False, use_reloader=False, host='0.0.0.0', port=8080,
+    app.run(debug=True, use_reloader=False, host='0.0.0.0', port=8080)
             ssl_context=(CONFIG.HOST_CERT_PATH,
                          CONFIG.HOST_KEY_PATH))

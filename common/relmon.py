@@ -228,7 +228,11 @@ class StatusUpdater(Worker):
         """Update sample statuses from Workload Manager"""
         for sample in self.request.samples_iter(["initial",
                                                  "waiting",
-                                                 "DQMIO"]):
+                                                 "DQMIO"], ["wf doesn't exist"]):
+            elapsed_time = (int(time.time()) - self.request.id_) / 60
+            if ((elapsed_time >= 9) and (sample["status"]=="waiting")):
+                sample["wm_status"] = "wf doesn't exist"
+                continue
             if (self._stop):
                 return
             wm_status = (
@@ -252,20 +256,23 @@ class StatusUpdater(Worker):
                 continue
             if (self._stop):
                 return
-            file_urls = utils.get_ROOT_file_urls(
-                sample_list[0]["name"],
-                category["name"])
-            if (not file_urls):
-                # FIXME: temporary solution
-                self.request.get_access()
-                sample_list[0]["status"] = "failed"
-                if (self.request.status not in
-                    CONFIG.FINAL_RELMON_STATUSES):
-                    # then:
-                    self.request.status = "failed"
-                self.request.release_access()
-                # TODO: clean up
-                return
+            for sample_index in range(len(sample_list)):
+                file_urls = utils.get_ROOT_file_urls(
+                    sample_list[sample_index]["name"],
+                    category["name"])
+                if (not file_urls):
+                    # FIXME: temporary solution
+                    self.request.get_access()
+                    sample_list[sample_index]["status"] = "failed"
+                    SampleStatus = self.checkSampletatus(sample_list);
+                    if ((self.request.status not in
+                        CONFIG.FINAL_RELMON_STATUSES) and SampleStatus):
+                        # then:
+
+                        self.request.status = "failed"
+                    self.request.release_access()
+                    # TODO: clean up
+                    #return was put into comments, because we need to do loop
             if (self._stop):
                 return
             for sample in sample_list:
@@ -292,6 +299,11 @@ class StatusUpdater(Worker):
         self._stop = True
         logger.info("Stopping StatusUpdater for RR " + str(self.request.id_))
 
+    def checkSampletatus(self, sample_list):
+        for sample in sample_list:
+            if (sample["status"] == "failed"):
+                return True
+            return False    
 
 class SSHWorker(Worker):
     def __init__(self, command):

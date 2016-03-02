@@ -188,7 +188,7 @@ class Controller(threading.Thread):
             logger.error("Cleaner on remote machine failed")
             self.request.get_access()
             try:
-                self.request.status = "failed"
+                self.request.status = "failed controller 192"
             finally:
                 self.request.release_access()
 

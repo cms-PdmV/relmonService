@@ -2,7 +2,8 @@
 <html>
   <head>
     <title>Relmon request (workflow) service</title>
-    <base href="/relmonsvc/">
+    <!-- <base href=" relmonsvc/"> -->
+    <base href="/">  
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Bootstrap CSS -->
     <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
@@ -12,7 +13,9 @@
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.11/angular.min.js"></script>
     <!-- Angular ui Bootstrap -->
     <script src="//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.12.0.js"></script>
-
+    <!-- Underscorejs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+    
     <script src="request_controllers.js"></script>
   </head>
 
@@ -23,20 +26,20 @@
          class="container"
          ng-controller="Request_controller as request_controller">
       <!-- BEGIN new RelMon request part -->
-      <div class="page-header" ng-init="new_request_collapsed = true" style="overflow:hidden">
+      <div class="page-header" style="overflow:hidden">
         <span style="float: right">Logged in as: {{request_controller.user.name}} <a href="https://login.cern.ch/adfs/ls/?wa=wsignout1.0">Logout</a></span>
         <h1>RelMon service</h1>
       </div>
       <h2>New RelMon request (campaign)
         <button class="btn btn-primary" type="button"
-                ng-click="new_request_collapsed = !new_request_collapsed">
-          <span ng-if="new_request_collapsed">New RelMon</span>
-          <span ng-if="!new_request_collapsed">Hide</span>
+                ng-click="request_controller.new_request_collapsed = !request_controller.new_request_collapsed">
+          <span ng-if="request_controller.new_request_collapsed">New RelMon</span>
+          <span ng-if="!request_controller.new_request_collapsed">Hide</span>
         </button>
       </h2>
       <form name="requests_form"
-            ng-submit="request_controller.try_submit()"
-            collapse="new_request_collapsed">
+            ng-submit="request_controller.try_submit(request_controller.internal_id)"
+            collapse="request_controller.new_request_collapsed">
         <tabset>
           <tab ng-repeat="category in request_controller.sample_inputs"
                heading="{{category.name}}">
@@ -59,19 +62,20 @@
               </div>
           </tab>
         </tabset>
-        <hr />
+        <hr/>
         <div class="row">
           <label class="col-md-8">Name:
             <input class="input-lg" type="text" style="width:100%"
-                   ng-model="request_controller.new_request_name" />
-	  </label>
+                   ng-model="request_controller.new_request_name" ng-change="request_controller.checkEditOrSubmit();"/>
+      	  </label>
           <label class="col-md-2">Threshold:
             <input type="text" class="input-lg" style="width:100%"
                    ng-model="request_controller.new_request_threshold" />
-	  </label>
+      	  </label>
           <label class="col-md-2">&nbsp
-            <input type="submit" class="btn btn-primary btn-lg"  style="width:100%"/>
-          </label>
+                  <!-- <input type="submit" class="btn btn-primary btn-lg"  style="width:100%"/> -->
+                  <button class="btn btn-primary btn-lg" style="width:100%;">{{request_controller.action_name}}</button>
+          </label> 
         </div>
       </form>
 <!-- END New RelMon request part -->
@@ -112,6 +116,12 @@
                           ng-class="request.status=='finished' ? '' : 'disabled'"
                           ng-click="request_controller.post_closer(request)">
                     Close
+                  </button>
+                  <button class="btn btn-danger" style="margin-top: 1px; padding: 5px;"
+                          ng-class="request.status=='finished' ? 'disabled' : ''"
+                          ng-click="request_controller.post_edit(request.id_, $index)"{{$index}}>
+                          <!-- ng-click="request_controller.post_edit(request.id_+$index)"{{$index}}> -->
+                    Edit
                   </button>
                 </li>
               </ul>

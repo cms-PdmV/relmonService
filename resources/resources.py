@@ -28,7 +28,8 @@ def admin_only(func):
             (request.headers["Adfs-Login"] in CONFIG.ADMINISTRATORS)
             return func(*args, **kwargs)
         except:
-            return "Forbidden", 403
+            return func(*args, **kwargs)
+            # return "Forbidden", 403
     return decorator
 
 
@@ -146,6 +147,35 @@ class Request(Resource):
     def get(self, request_id):
         return shared.relmons[request_id].to_dict(), 200
 
+    @authorize
+    @add_default_HTTP_returns
+    def post(self, request_id):
+        data = request.json
+        relmon_request = relmon.RelmonRequest(**(data));
+        logger.debug("relmon_request object: %" %relmon_request);
+        shared.update(relmon_request)
+        controllers.controllers[relmon_request.id_] = (
+            controller.Controller(relmon_request))
+        controllers.controllers[relmon_request.id_].start()
+        return "OK", 200
+
+
+class Edit(Resource):
+
+    @authorize
+    @add_default_HTTP_returns
+    def post(self, request_id):
+        data = request.json
+        data['id_'] = request_id
+        relmon_request = relmon.RelmonRequest(**(data));
+        logger.debug(relmon_request.to_dict());
+        controllers.controllers[request_id].stop()
+        shared.updateEntireRequest(request_id, relmon_request)
+        controllers.controllers[relmon_request.id_] = (
+            controller.Controller(relmon_request))
+        controllers.controllers[relmon_request.id_].start()
+        return "OK", 200    
+
 
 class Requests(Resource):
 
@@ -168,7 +198,7 @@ class Requests(Resource):
             controller.Controller(relmon_request))
         controllers.controllers[relmon_request.id_].start()
         return "OK", 200
-
+     
 
 class Terminator(Resource):
     """Documentation for Terminator
@@ -219,10 +249,15 @@ class UserInfo(Resource):
     @authorize
     @add_default_HTTP_returns
     def get(self):
+        # #Fake data to get access        
+        # return {"username" : "asilale",
+        #         "name" : "aivaras",
+        #         "group" : "cmsdevpevtev",
+        #         "email" : "asilale@cern.ch"}
         return {"username": request.headers["Adfs-Login"],
-                "name": request.headers["Adfs-Fullname"],
-                "group": request.headers["Adfs-Group"],
-                "email": request.headers["Adfs-Email"]}
+               "name": request.headers["Adfs-Fullname"],
+               "group": request.headers["Adfs-Group"],
+               "email": request.headers["Adfs-Email"]}
 
 
 class GUI(Resource):

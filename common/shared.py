@@ -22,19 +22,15 @@ lock = threading.RLock()
 relmon_data = []
 relmons = {}
 
-try:
-    if not os.path.isfile(CONFIG.DATA_FILE_NAME):
-        with open(CONFIG.DATA_FILE_NAME, 'w') as new_file:
-            new_file.write("[]")
-    else:
-        with open(CONFIG.DATA_FILE_NAME) as json_file:
-            relmon_data = json.load(json_file)
-            for request_json in relmon_data:
-                request = relmon.RelmonRequest(**request_json)
-                relmons[request.id_] = request
-except:
-    # logger.exception("Failed RelMon data file initialization/loading")
-    raise
+if not os.path.isfile(CONFIG.DATA_FILE_NAME):
+    with open(CONFIG.DATA_FILE_NAME, 'w') as new_file:
+        new_file.write("[]")
+else:
+    with open(CONFIG.DATA_FILE_NAME) as json_file:
+        relmon_data = json.load(json_file)
+        for request_json in relmon_data:
+            request = relmon.RelmonRequest(**request_json)
+            relmons[request.id_] = request
 
 
 def new(request):
@@ -50,6 +46,7 @@ def new(request):
 
 
 def update(request_id):
+    #Updating only statuses
     logger.info("Updating RelmonRequest " + str(request_id))
     with lock:
         for req_idx, request in enumerate(relmon_data):
@@ -59,6 +56,19 @@ def update(request_id):
         _write()
     logger.info("RelmonRequest updated")
 
+def updateEntireRequest(request_id, req_data):
+    logger.info("Updating RelmonRequest " + str(request_id))
+    global relmons
+    with lock:
+        for req_idx, request in enumerate(relmon_data):
+            if (request["id_"] == request_id):
+                tmp = req_data.to_dict()
+                tmp['id_'] = request_id
+                relmon_data[req_idx] = tmp
+                relmons[request_id] = relmon.RelmonRequest(**tmp)
+                break
+        _write()
+    logger.info("RelmonRequest updated")
 
 def drop(request_id):
     logger.info("Dropping RelmonRequest " + str(request_id))
