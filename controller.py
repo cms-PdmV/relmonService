@@ -52,8 +52,9 @@ class Controller(threading.Thread):
         logger.info("Running Controller for RR " + str(self.request.id_))
         # upsdate statuses
         waiting = False
-        self.request.get_access()
+        
         try:
+            self.request.get_access()
             if (self.request.status in ["initial", "waiting"]):
                 logger.info("RR is new or waiting")
                 self.request.status = "waiting"
@@ -64,9 +65,10 @@ class Controller(threading.Thread):
             if (not self._update_statuses()):
                 return
         # do downloads
+
         downloading = False
-        self.request.get_access()
         try:
+            self.request.get_access()
             if (self.request.status in ["waiting", "downloading"]):
                 self.request.status = "downloading"
                 logger.info("RR is/changed to  downloading")
@@ -78,8 +80,9 @@ class Controller(threading.Thread):
                 return
         # make report
         comparing = False
-        self.request.get_access()
+        
         try:
+            self.request.get_access()
             if (self.request.status in ["downloading", "comparing"]):
                 logger.info("RR is/changed to  comparing")
                 self.request.status = "comparing"
@@ -102,8 +105,8 @@ class Controller(threading.Thread):
                 return False
             shared.update(self.request.id_)
             #Commented, for a while. Because we don't want to make statuses Failed.
-            # if (self.request.status in CONFIG.FINAL_RELMON_STATUSES):
-            #     return False
+            if (self.request.status in CONFIG.FINAL_RELMON_STATUSES):
+                 return False
             if (self.request.is_download_ready()):
                 logger.info("RR download ready")
                 return True
@@ -189,7 +192,7 @@ class Controller(threading.Thread):
             logger.error("Cleaner on remote machine failed")
             self.request.get_access()
             try:
-                self.request.status = "failed controller 192"
+                self.request.status = "failed"
             finally:
                 self.request.release_access()
 

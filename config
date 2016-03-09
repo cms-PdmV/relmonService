@@ -24,7 +24,7 @@ host_cert_path = /etc/pki/tls/certs/localhost.crt
 wmstats_url = /couchdb/wmstats
 remote_work_dir = /build/asilale/relmon
 key_path = /afs/cern.ch/user/a/asilale/.globus/voms_proxy.cert
-service_working_dir = /afs/cern.ch/user/a/asilale/build/relmonService
+service_working_dir = /home/relmonsvc/relmonService
 dqm_root_url = /dqm/relval/data/browse/ROOT
 data_file_name = data
 logs_dir = logs
@@ -38,7 +38,7 @@ service_base = /relmonsvc
 host_key_path = /etc/pki/tls/private/localhost.key
 certificate_path = /afs/cern.ch/user/a/asilale/.globus/voms_proxy.cert
 remote_host = cmsdev04.cern.ch
-service_host = aivaro2
+service_host = cms-pdmv-dev.cern.ch
 
 [ints]
 time_between_status_updates = 180

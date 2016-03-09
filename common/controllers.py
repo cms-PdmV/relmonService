@@ -1,6 +1,7 @@
 """Shared 'controllers' variable"""
 
 import logging
+
 try:  # Python 2.7+
     from logging import NullHandler
 except ImportError:

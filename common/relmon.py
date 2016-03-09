@@ -85,11 +85,13 @@ class RelmonRequest():
     def get_access(self):
         logger.debug("Accessing RR " + str(self.id_))
         self.high_priority_queue.join()
-        self.lock.acquire()
+        # commented because somewhere it just stuck
+        # self.lock.acquire()
         logger.debug("Got access to RR " + str(self.id_))
 
     def release_access(self):
-        self.lock.release()
+        # commented because somewhere it just stuck
+        # self.lock.release()
         logger.debug("Released access to RR " + str(self.id_))
 
     def get_priority_access(self):
@@ -107,16 +109,16 @@ class RelmonRequest():
 
     def is_download_ready(self):
         frac_ROOT = self.sample_fraction(
-            ["ROOT", "downloaded"], ["NoDQMIO", "NoROOT"])
+            ["ROOT", "downloaded"], ["NoDQMIO", "NoROOT", "failed_rqmgr"])
         frac_threshold = fractions.Fraction( int(self.threshold), 100)
         return frac_ROOT >= frac_threshold
 
     def is_ROOT_100(self):
-        frac_ROOT = self.sample_fraction(["ROOT"], ["NoDQMIO", "NoROOT"])
+        frac_ROOT = self.sample_fraction(["ROOT"], ["NoDQMIO", "NoROOT", "failed_rqmgr"])
         return frac_ROOT == fractions.Fraction(1, 1)
 
     def has_ROOT(self):
-        frac_ROOT = self.sample_fraction(["ROOT"], ["NoDQMIO", "NoROOT"])
+        frac_ROOT = self.sample_fraction(["ROOT"], ["NoDQMIO", "NoROOT", "failed_rqmgr"])
         return frac_ROOT > fractions.Fraction(0)
 
     def sample_fraction(self, status, ignore=None):
@@ -250,6 +252,8 @@ class StatusUpdater(Worker):
         categories_and_listnames = itertools.product(
             self.request.categories,
             ["target", "reference"])
+        # Temporary commented. Explanation @ 302 line
+        # statusShouldBeFailed = True
         for (category, list_name) in categories_and_listnames:
             sample_list = category["lists"][list_name]
             if (not sample_list):
@@ -257,53 +261,54 @@ class StatusUpdater(Worker):
             if (self._stop):
                 return
             for sample_index in range(len(sample_list)):
+
                 file_urls = utils.get_ROOT_file_urls(
                     sample_list[sample_index]["name"],
                     category["name"])
                 if (not file_urls):
                     # FIXME: temporary solution
                     self.request.get_access()
-                    sample_list[sample_index]["status"] = "failed"
-                    SampleStatus = self.checkSampletatus(sample_list);
-                    if ((self.request.status not in
-                        CONFIG.FINAL_RELMON_STATUSES) and SampleStatus):
-                        # then:
-
-                        self.request.status = "failed"
+                    if (sample_list[sample_index]["wm_status"] == "wf doesn't exist"):
+                        sample_list[sample_index]["status"] = "failed_rqmgr"
+                    # Temporary commented. Explanation @ 302 line
+                    # else:
+                    #     sample_list[sample_index]["status"] = "failed"
+                if (sample_list[sample_index]["status"] != "failed"):
+                    statusShouldBeFailed = False
+                if (self._stop):
                     self.request.release_access()
-                    # TODO: clean up
-                    #return was put into comments, because we need to do loop
-            if (self._stop):
-                return
-            for sample in sample_list:
-                if (sample["status"] != "DQMIO"):
-                    continue
-                matches = [u for u in file_urls
-                           if (sample["ROOT_file_name_part"] in u)]
-                self.request.get_access()
-                sample["root_count"] = len(matches)
-                if (len(matches) > 0 and
-                    len(matches) >= sample["run_count"]):
-                    # then:
-                    sample["status"] = "ROOT"
-                elif (CONFIG.IGNORE_NOROOT_WORKFLOWS and
-                      sample["wm_status"] in CONFIG.FINAL_WM_STATUSES):
-                    sample["status"] = "NoROOT"
-                    logger.info(sample["name"] + "setting to 'NoROOT', " +
-                                "wm_status is final but not enough " +
-                                "files were found with '" +
-                                sample["ROOT_file_name_part"] + "'")
-                self.request.release_access()
+                    return
+                for sample in sample_list:
+                    if ((sample["status"] != "DQMIO")):
+                        continue
+
+                    if (file_urls):
+                        matches = [u for u in file_urls
+                                   if (sample["ROOT_file_name_part"] in u)]
+                        self.request.get_access()
+                        sample["root_count"] = len(matches)
+                        if (len(matches) > 0 and
+                            len(matches) >= sample["run_count"]):
+                            # then:
+                            sample["status"] = "ROOT"
+                        elif (CONFIG.IGNORE_NOROOT_WORKFLOWS and
+                                sample["wm_status"] in CONFIG.FINAL_WM_STATUSES):
+                            sample["status"] = "NoROOT"
+                            logger.info(sample["name"] + "setting to 'NoROOT', " +
+                                        "wm_status is final but not enough " +
+                                        "files were found with '" +
+                                        sample["ROOT_file_name_part"] + "'")
+                        self.request.release_access()
+        #I think that this part not important anymore. Test with another task.
+        # if (statusShouldBeFailed):
+        #     self.request.get_access()
+        #     self.request.status = "failed"
+        #     self.request.release_access()
+
 
     def stop(self):
         self._stop = True
         logger.info("Stopping StatusUpdater for RR " + str(self.request.id_))
-
-    def checkSampletatus(self, sample_list):
-        for sample in sample_list:
-            if (sample["status"] == "failed"):
-                return True
-            return False    
 
 class SSHWorker(Worker):
     def __init__(self, command):

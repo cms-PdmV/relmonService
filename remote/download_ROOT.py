@@ -21,6 +21,11 @@ handler = logging.handlers.RotatingFileHandler(
 handler.setLevel(logging.DEBUG)
 logger.addHandler(handler)
 
+def get_first_existing_sample(sample_list):
+    for sample in sample_list:
+        if (sample["DQMIO_string"] != None):
+            return sample
+
 parser = argparse.ArgumentParser()
 parser.add_argument(dest="id_", help="FIXME: id help")
 # parser.add_argument("--")
@@ -36,6 +41,7 @@ status, data = utils.httpsget(
     CONFIG.SERVICE_HOST,
     CONFIG.SERVICE_BASE + "/requests/" + str(args.id_),
     headers={"Cookie": cookie})
+
 if (status != httplib.OK):
     # FIXME: solve this problem
     logger.error("Failed getting RelMon request. Status: " + str(status))
@@ -61,13 +67,16 @@ for category in request.categories:
         #     os.makedirs(lname, 0770)
         # os.chdir(lname)
         # TODO: handle failures
+
+        existing_sample = get_first_existing_sample(sample_list)
         file_urls = utils.get_ROOT_file_urls(
-            sample_list[0]["name"],
+            existing_sample["name"],
             category["name"])
         for sample in sample_list:
             if (sample["status"] != "ROOT"):
                 continue
             file_count = 0
+
             for file_url in file_urls:
                 if (sample["ROOT_file_name_part"] not in file_url):
                     continue
@@ -83,24 +92,22 @@ for category in request.categories:
 
             # <- end of file_urls
             # Maybe do something else with the downloaded_count
-            if (file_count == sample["run_count"]):
-                sample["status"] = "downloaded"
-                # TODO: handle failures (request)
-                #cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
-                cookie = "smithing"
-                if (cookie is None):
-                    logger.error("Failed getting sso cookies for " +
-                                 CONFIG.SERVICE_HOST)
-                    # exit(1)
-
-                status, data = utils.https(
-                    "PUT",
-                    CONFIG.SERVICE_HOST,
-                    CONFIG.SERVICE_BASE + "requests/" +
-                    str(request.id_) + "/categories/" + category["name"] +
-                    "/lists/" + lname + "/samples/" + sample["name"],
-                    data=json.dumps(sample), port=8080)
-                    headers={"Cookie": cookie})
+                if (file_count == sample["run_count"]):
+                    sample["status"] = "downloaded"
+                    # TODO: handle failures (request)
+                    cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
+                    if (cookie is None):
+                        logger.error("Failed getting sso cookies for " +
+                                     CONFIG.SERVICE_HOST)
+                        # exit(1)
+                    status, data = utils.https(
+                        "PUT",
+                        CONFIG.SERVICE_HOST,
+                        CONFIG.SERVICE_BASE + "/requests/" +
+                        str(request.id_) + "/categories/" + category["name"] +
+                        "/lists/" + lname + "/samples/" + sample["name"],
+                        data=json.dumps(sample),
+                        headers={"Cookie": cookie})
         # <- end of samples
         # NOTE: same dir for ref and target
         # os.chdir("..")

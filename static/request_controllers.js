@@ -172,6 +172,8 @@ function Request_controller($http, $modal, $location) {
             return "badge-success";
         case "ROOT":
             return "badge-info";
+        case "failed_rqmgr":
+            return "badge-warning";
         default:
             return "";
         }
