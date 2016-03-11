@@ -231,10 +231,10 @@ class StatusUpdater(Worker):
         for sample in self.request.samples_iter(["initial",
                                                  "waiting",
                                                  "DQMIO"], ["wf doesn't exist"]):
-            elapsed_time = (int(time.time()) - self.request.id_) / 60
-            if ((elapsed_time >= 9) and (sample["status"]=="waiting")):
-                sample["wm_status"] = "wf doesn't exist"
-                continue
+            #elapsed_time = (int(time.time()) - self.request.id_) / 60
+            #if ((elapsed_time >= 9) and (sample["status"]=="waiting")):
+            #    sample["wm_status"] = "wf doesn't exist"
+            #    continue
             if (self._stop):
                 return
             wm_status = (
@@ -253,7 +253,7 @@ class StatusUpdater(Worker):
             self.request.categories,
             ["target", "reference"])
         # Temporary commented. Explanation @ 302 line
-        # statusShouldBeFailed = True
+        statusShouldBeFailed = True
         for (category, list_name) in categories_and_listnames:
             sample_list = category["lists"][list_name]
             if (not sample_list):
@@ -261,19 +261,18 @@ class StatusUpdater(Worker):
             if (self._stop):
                 return
             for sample_index in range(len(sample_list)):
-
                 file_urls = utils.get_ROOT_file_urls(
                     sample_list[sample_index]["name"],
                     category["name"])
-                if (not file_urls):
+                #if (not file_urls):
                     # FIXME: temporary solution
-                    self.request.get_access()
-                    if (sample_list[sample_index]["wm_status"] == "wf doesn't exist"):
-                        sample_list[sample_index]["status"] = "failed_rqmgr"
+                self.request.get_access()
+                if (sample_list[sample_index]["wm_status"] == "wf doesn't exist"):
+                    sample_list[sample_index]["status"] = "failed_rqmgr"
                     # Temporary commented. Explanation @ 302 line
                     # else:
                     #     sample_list[sample_index]["status"] = "failed"
-                if (sample_list[sample_index]["status"] != "failed"):
+                if (sample_list[sample_index]["status"] != "failed_rqmgr"):
                     statusShouldBeFailed = False
                 if (self._stop):
                     self.request.release_access()
@@ -300,10 +299,10 @@ class StatusUpdater(Worker):
                                         sample["ROOT_file_name_part"] + "'")
                         self.request.release_access()
         #I think that this part not important anymore. Test with another task.
-        # if (statusShouldBeFailed):
-        #     self.request.get_access()
-        #     self.request.status = "failed"
-        #     self.request.release_access()
+        if (statusShouldBeFailed):
+           self.request.get_access()
+           self.request.status = "failed"
+           self.request.release_access()
 
 
     def stop(self):

@@ -52,7 +52,6 @@ class Controller(threading.Thread):
         logger.info("Running Controller for RR " + str(self.request.id_))
         # upsdate statuses
         waiting = False
-        
         try:
             self.request.get_access()
             if (self.request.status in ["initial", "waiting"]):

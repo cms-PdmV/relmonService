@@ -54,6 +54,7 @@ if (not os.path.exists(rr_path)):
     os.makedirs(rr_path, 0770)
 os.chdir(rr_path)
 for category in request.categories:
+
     if (not category["lists"]["target"]):
         continue
     if (not os.path.exists(category["name"])):
@@ -69,6 +70,8 @@ for category in request.categories:
         # TODO: handle failures
 
         existing_sample = get_first_existing_sample(sample_list)
+        if (not existing_sample):
+            continue
         file_urls = utils.get_ROOT_file_urls(
             existing_sample["name"],
             category["name"])
@@ -83,12 +86,13 @@ for category in request.categories:
                 # TODO: handle failures (httpsget_large_file)
                 if (os.path.isfile(file_url.split("/")[-1])):
                     file_count += 1
-                    continue
+                    
                 # TODO: handle failures (httpsget_large_file)
-                utils.httpsget_large_file(file_url.split("/")[-1],
+                else:
+                    utils.httpsget_large_file(file_url.split("/")[-1],
                                           CONFIG.CMSWEB_HOST,
                                           file_url)
-                file_count += 1
+                    file_count += 1
 
             # <- end of file_urls
             # Maybe do something else with the downloaded_count

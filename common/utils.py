@@ -270,9 +270,8 @@ def get_workload_manager_status(sample_name):
         # of taking last element
         ##for non existing wf and those which were removed from wmstats
         if 'doc' in data["rows"][0] and data["rows"][0]['doc'] != None:
-            logger.debug("data rows 0: " + str(data["rows"][0]))
             wm_status = (
-                    data["rows"][0]["doc"]["request_status"][-1]["status"])
+                    data["rows"][0]["doc"]["RequestTransition"][-1]["Status"])
         else:
             wm_status = "wf doesn't exist"
         return wm_status
