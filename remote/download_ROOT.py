@@ -85,10 +85,12 @@ for category in request.categories:
                     continue
                 # TODO: handle failures (httpsget_large_file)
                 if (os.path.isfile(file_url.split("/")[-1])):
+                    logger.debug("file already exist: %s" %sample["name"])
                     file_count += 1
                     
                 # TODO: handle failures (httpsget_large_file)
                 else:
+                    logger.debug("downloading file: %s" %sample["name"])
                     utils.httpsget_large_file(file_url.split("/")[-1],
                                           CONFIG.CMSWEB_HOST,
                                           file_url)

@@ -14,6 +14,7 @@ import subprocess
 import re
 import json
 import httplib
+import time
 
 
 try:
@@ -255,7 +256,7 @@ def get_sso_cookie(url):
 
 # given workflow name, returns workflow status from Workload
 # Management database 'wmstats'
-def get_workload_manager_status(sample_name):
+def get_workload_manager_status(sample_name, last_update):
     url = CONFIG.WMSTATS_URL + "/_all_docs?keys=%5B%22"
     url += sample_name
     url += "%22%5D&include_docs=true"
@@ -272,9 +273,12 @@ def get_workload_manager_status(sample_name):
         if 'doc' in data["rows"][0] and data["rows"][0]['doc'] != None:
             wm_status = (
                     data["rows"][0]["doc"]["RequestTransition"][-1]["Status"])
+            return wm_status
         else:
-            wm_status = "wf doesn't exist"
-        return wm_status
+            elapsed_time = (int(time.time()) - last_update) / 60
+            if (elapsed_time >= 4):
+                wm_status = "wf doesn't exist"
+                return wm_status
     except (ValueError, LookupError):
         logger.exception("get_workload_manager_status returning with error")
         return None 

@@ -43,7 +43,7 @@ class RelmonRequest():
     """Documentation for RelmonRequest
 
     """
-    def __init__(self, name, threshold, categories,
+    def __init__(self, name, threshold, categories, lastUpdate="",
                  id_=None, status="initial", log=False):
         self.id_ = id_
         if (self.id_ is None):
@@ -62,6 +62,9 @@ class RelmonRequest():
         self.categories = categories
         self.status = status
         self.log = log
+        self.lastUpdate = lastUpdate
+        if not self.lastUpdate:
+            self.lastUpdate = self.id_
         for category in self.categories:
             for sample_list in category["lists"].itervalues():
                 for sample_idx, sample in enumerate(sample_list):
@@ -79,7 +82,8 @@ class RelmonRequest():
             "status": self.status,
             "threshold": self.threshold,
             "log": self.log,
-            "categories": self.categories
+            "categories": self.categories,
+            "lastUpdate" : self.lastUpdate
         }
 
     def get_access(self):
@@ -231,14 +235,10 @@ class StatusUpdater(Worker):
         for sample in self.request.samples_iter(["initial",
                                                  "waiting",
                                                  "DQMIO"], ["wf doesn't exist"]):
-            #elapsed_time = (int(time.time()) - self.request.id_) / 60
-            #if ((elapsed_time >= 9) and (sample["status"]=="waiting")):
-            #    sample["wm_status"] = "wf doesn't exist"
-            #    continue
             if (self._stop):
                 return
             wm_status = (
-                utils.get_workload_manager_status(sample["name"]))
+                utils.get_workload_manager_status(sample["name"], self.request.lastUpdate))
             if (sample["wm_status"] == wm_status):
                 continue
             if (self._stop):
@@ -252,7 +252,6 @@ class StatusUpdater(Worker):
         categories_and_listnames = itertools.product(
             self.request.categories,
             ["target", "reference"])
-        # Temporary commented. Explanation @ 302 line
         statusShouldBeFailed = True
         for (category, list_name) in categories_and_listnames:
             sample_list = category["lists"][list_name]
@@ -264,14 +263,10 @@ class StatusUpdater(Worker):
                 file_urls = utils.get_ROOT_file_urls(
                     sample_list[sample_index]["name"],
                     category["name"])
-                #if (not file_urls):
                     # FIXME: temporary solution
                 self.request.get_access()
                 if (sample_list[sample_index]["wm_status"] == "wf doesn't exist"):
                     sample_list[sample_index]["status"] = "failed_rqmgr"
-                    # Temporary commented. Explanation @ 302 line
-                    # else:
-                    #     sample_list[sample_index]["status"] = "failed"
                 if (sample_list[sample_index]["status"] != "failed_rqmgr"):
                     statusShouldBeFailed = False
                 if (self._stop):

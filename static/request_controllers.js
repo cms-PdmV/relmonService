@@ -271,13 +271,12 @@ function Request_controller($http, $modal, $location) {
                     })
                 })
             })
+
             me.old_name = data.name;
             me.new_request_name = data.name;
             me.new_request_collapsed = false;
-            if (data.name == me.new_request_name) {
-                me.method_name = "edit";    
-            }
         });
+
         me.internal_id = relmon_request;
     }
 

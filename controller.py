@@ -11,6 +11,8 @@ except ImportError:
             pass
 import time
 import threading
+import json
+import os
 
 from config import CONFIG
 from common import relmon, shared
@@ -50,7 +52,6 @@ class Controller(threading.Thread):
     @uncaught_exception_to_log_decorator
     def run(self):
         logger.info("Running Controller for RR " + str(self.request.id_))
-        # upsdate statuses
         waiting = False
         try:
             self.request.get_access()
@@ -64,7 +65,6 @@ class Controller(threading.Thread):
             if (not self._update_statuses()):
                 return
         # do downloads
-
         downloading = False
         try:
             self.request.get_access()

@@ -41,10 +41,11 @@ remote_host = cmsdev04.cern.ch
 service_host = cms-pdmv-dev.cern.ch
 
 [ints]
-time_between_status_updates = 180
+time_between_status_updates = 120
 service_port = 8080
 time_between_downloads = 600
-time_after_threshold_reached = 1
+time_after_threshold_reached = 3
+time_how_long_should_wait_for_wf = 4
 
 [booleans]
 ignore_noroot_workflows = True
