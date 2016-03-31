@@ -276,7 +276,7 @@ def get_workload_manager_status(sample_name, last_update):
             return wm_status
         else:
             elapsed_time = (int(time.time()) - last_update) / 60
-            if (elapsed_time >= 4):
+            if (elapsed_time >= CONFIG.TIME_WAIT_FOR_WL):
                 wm_status = "wf doesn't exist"
                 return wm_status
     except (ValueError, LookupError):

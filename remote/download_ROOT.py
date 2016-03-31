@@ -96,10 +96,27 @@ for category in request.categories:
                                           file_url)
                     file_count += 1
 
+
             # <- end of file_urls
             # Maybe do something else with the downloaded_count
-                if (file_count == sample["run_count"]):
+              
+                if ((file_count >= sample["run_count"] and sample["run_count"] != 0)):
                     sample["status"] = "downloaded"
+                    cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
+                    if (cookie is None):
+                        logger.error("Failed getting sso cookies for " +
+                                     CONFIG.SERVICE_HOST)
+                        # exit(1)
+                    status, data = utils.https(
+                        "PUT",
+                        CONFIG.SERVICE_HOST,
+                        CONFIG.SERVICE_BASE + "/requests/" +
+                        str(request.id_) + "/categories/" + category["name"] +
+                        "/lists/" + lname + "/samples/" + sample["name"],
+                        data=json.dumps(sample),
+                        headers={"Cookie": cookie})
+                elif ((file_count < sample["run_count"]) or (sample["run_count"] == 0)):
+                    sample["status"] = "failed download"
                     # TODO: handle failures (request)
                     cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
                     if (cookie is None):
@@ -114,6 +131,7 @@ for category in request.categories:
                         "/lists/" + lname + "/samples/" + sample["name"],
                         data=json.dumps(sample),
                         headers={"Cookie": cookie})
+                
         # <- end of samples
         # NOTE: same dir for ref and target
         # os.chdir("..")

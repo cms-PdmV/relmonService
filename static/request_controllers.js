@@ -64,6 +64,7 @@ function Request_controller($http, $modal, $location) {
         me.new_request_threshold = 100;
     }
 
+
     /*
      * 
      */
@@ -104,6 +105,7 @@ function Request_controller($http, $modal, $location) {
                 "All sample lists are empty."
             );
         }
+        this.new_request_collapsed = true;
         return post_data;
     }
 
@@ -145,6 +147,8 @@ function Request_controller($http, $modal, $location) {
         reset_sample_inputs();
     }
 
+    // this.addNewChoice = function
+
        // public methods
 
     this.sample_count_by_status = function(samples, status) {
@@ -174,6 +178,8 @@ function Request_controller($http, $modal, $location) {
             return "badge-info";
         case "failed_rqmgr":
             return "badge-warning";
+        case "failed download":
+            return "badge-danger";
         default:
             return "";
         }
@@ -224,6 +230,7 @@ function Request_controller($http, $modal, $location) {
                 throw e;
             }
         }
+        me.new_request_collapsed = true;
     };
 
     this.post_terminator = function(relmon_request) {
@@ -313,6 +320,8 @@ function Request_controller($http, $modal, $location) {
         });
         return modal_inst;
     };
+
+
 
 // init stuff
     reset_sample_inputs();

@@ -46,6 +46,7 @@ def update(request_id):
     #Updating only statuses
     logger.info("Updating RelmonRequest " + str(request_id))
     with lock:
+        relmons[request_id].lastUpdate = int(time.time())
         _write()
     logger.info("RelmonRequest updated")
 
@@ -53,6 +54,7 @@ def updateEntireRequest(request_id, req_data):
     logger.info("Updating RelmonRequest " + str(request_id))
     with lock:
         relmons[request_id] = req_data
+        relmons[request_id].lastUpdate = int(time.time())
         _write()
     logger.info("RelmonRequest updated")
 
