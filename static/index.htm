@@ -16,6 +16,7 @@
     <script src="//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.12.0.js"></script>
     <!-- Underscorejs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.5/angular-route.min.js"></script>
     
     <script src="request_controllers.js"></script>
   </head>
@@ -91,7 +92,7 @@
                    ng-model="request_controller.new_request_threshold" />
       	  </label>
           <label class="col-md-2">&nbsp
-                  <button class="btn btn-primary btn-lg" style="width:100%;">{{request_controller.action_name}}</button>
+                  <button class="btn btn-primary btn-lg" style="width:100%;">{{request_controller.action_name}} </button>
           </label> 
         </div>
       </form>
@@ -112,7 +113,7 @@
           <tr ng-repeat="request in request_controller.relmon_requests">
             <td>
               <ul  style="word-wrap: break-word; word-break: break-all;" class="list-group">
-                <li class="list-group-item">Id: {{request.id_}}</li>
+                <li class="list-group-item"><a ng-click="request_controller.scrollTo(request.id_).focus()" id="{{request.id_}}" ng-href="#{{request.id_}}" target="_self">Id: {{request.id_}}</a></li>
                 <li class="list-group-item">Name:</br>{{request.name}}</li>
                 <li class="list-group-item">Status: 
                   <span ng-class="request.status=='failed' ? 'text-danger' : 'text-info'">

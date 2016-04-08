@@ -147,140 +147,225 @@ def levenshtein(source, target):
 
     return previous_row[-1]
 
-def construct_final_lists(refs, tars):
-    fnl_refs = []
-    fnl_tars = []
-    temp = []
-    tmp2 = []
-    max_ver = 0
+
+def get_downloaded_files_list(givenList, wf_list):
     logger.info("*******************************")
-    logger.info("refs len: %s" %len(refs))
-    logger.info("tars len: %s" %len(tars))
+    logger.info("get_downloaded_files_list")
+    logger.info("list length: %s" %len(givenList))
     logger.info("*******************************")
-    if(len(tars) < len(refs)):
-        temp = refs
-        refs = tars
-        tars = temp
-    for ref in refs:
-        logger.info("@@@@@@@@@@@@@@@@@@@__BEGIN__@@@@@@@@@@@@@@@@@@@@@")
-        temp = []
-        logger.info("ref:: %s" %ref)
-        logger.info("fnl_refs length: %s" %len(fnl_refs))
-        cms = ("__").join([ref.split("_")[2], ref.split("__")[1]])
-        logger.info("cms1:: %s" %cms)
-        for tar in tars:
-            logger.info("tar:: %s" %tar)
-            cms2 = ("__").join([tar.split("_")[2], tar.split("__")[1]])
-            logger.info("cms2 %s" %cms2)
-            if (cms == cms2):
-                temp.append(tar)
-                #tars.remove(tar)
-            logger.info("temp length 160: %s" %len(temp))
-        if (len(temp) > 1):
-            logger.info('176 eilute')
-            tmp2 = []
-            for tmp in temp:
-                cms1 = tmp.split("-")[2].split("__")[0]
-                if (int(cms1[1:]) >= max_ver):
-                    max_ver = int(cms1[1:])
-                    tmp2.append(tmp)
-            temp = tmp2
-            logger.info("temp length:184 %s" %len(temp))
-        if (len(temp) > 1):
-            tmp2 = []
-            for tmp in temp:
-                logger.info("tmp: %s" %tmp)
-                cms1 = tmp.split("_")[1]
-                logger.info("cms1:: %s" %cms1)
-                logger.info("max versija:: %s" %max_ver)
-                logger.info("versijos dydis:: %s" %int(cms1[1:]))
-                if (int(cms1[1:]) >= max_ver):
-                    max_ver = int(cms1[1:])
-                    logger.info("max versija pakilo iki:: %s" %max_ver)
-                    tmp2.append(tmp)
-            temp = tmp2
-            logger.info("temp length 174: %s" %len(temp))
-        if (len(temp) > 1):
-            logger.info('186 eilute')
-            tmp2 = []
-            length = 99
-            for tmp in temp:
-                cms1 = ref.split("-")[1]
-                logger.info("ref split: %s" %cms1)
-                tmp_split = tmp.split("-")[1]
-                logger.info("lengvisho lengtas: %s" %length)
-                logger.info("tmp: %s" %tmp)
-                logger.info("leng ilgis: %s" %(levenshtein(cms1, tmp_split)))
-                if (levenshtein(cms1, tmp_split) <= length):
-                    length = levenshtein(cms1, tmp_split)
-                    logger.info("lengvisho lengtas gale: %s" %length)
-                    tmp2 = []
-                    tmp2.append(tmp)
-            temp = tmp2
-        if (len(temp) > 1):
-            logger.info("**************************************")
-            logger.info("Rado %s atitikmenis ;//" %len(temp))
-            logger.info("**************************************")
-            for x in temp:
-                logger.info(x)
-        #not finished. not fully implemented. left only calculate.
-        if (len(temp) > 0):
-            fnl_tars.append(temp[0])
-            fnl_refs.append(ref)
-        logger.info("@@@@@@@@@@@@@@@@@@@@_END_@@@@@@@@@@@@@@@@@@@@@@@@@@")
-    return fnl_refs, fnl_tars
+    final_list = []
+    #if (len(givenList) > 1):
+    for el in givenList:
+        logger.info("print ef and get everything. \n%s" %el)
+        pVar = []
+        for wf in wf_list:
+            wf_name = (("-").join(("__").join(wf.split("__")[1:3]).split("-")[:-1])) + "-"
+            #logger.info("wf_name: %s" %wf_name)
+            if (wf_name == el["ROOT_file_name_part"]):
+            #if (wf_name == el[]):
+                pVar.append(wf)
+            #logger.info("wf with same name numb.: %s" %len(pVar))
+        # if (el["root_count"] > 1 and el["run_count"] > 1 and len(pVar) > 1):
+            #Filter different RUN_Numbers
+        
+        logger.info("el: %s viso rado: %s" %(el["ROOT_file_name_part"], len(pVar)))
+        unique_list = []
+        for p in pVar:
+            unique_list.append(p.split("__")[0].split("_")[-1])
+        unique_list = list(set(unique_list))
+        logger.info("unique_list numb: %s" %len(unique_list))
+        for p in unique_list:
+            logger.info("print first from unique_list: %s" %p)
+            temp = []
+            for q in pVar:
+                if (p == q.split("__")[0].split("_")[-1]):
+                    temp.append(q)
+            logger.info("temp lenght: %s with this uniq: %s" %(len(temp), q))
+            if (len(temp) > 1):
+                tmp2 = []
+                max_ver = 0
+                for tmp in temp:
+                    logger.info("max version: %s" %max_ver)
+                    logger.info("To check max Version: \n%s" %tmp)
+                    if (int((tmp.split("__")[2].split("-")[-1])[1:]) > max_ver):
+                        max_ver = int((tmp.split("-")[2].split("__")[0])[1:])
+                        tmp2 = []
+                        tmp2.append(tmp)
+                    elif(int((tmp.split("__")[2].split("-")[-1])[1:]) == max_ver):
+                        tmp2.append(tmp)
+                temp = tmp2
+            #Find the other parameter the biggest version ever
+            logger.info("temp lenght v2: %s" %len(temp))
+            if (len(temp) > 1):
+                tmp2 = []
+                max_ver = 0
+                for tmp in temp:
+                    logger.info("max version: %s" %max_ver)
+                    logger.info("to check second version: \n%s" %tmp)
+                    if (int((tmp.split("_")[1])[1:]) > max_ver):
+                        max_ver = int((tmp.split("_")[1])[1:])
+                        tmp2.append(tmp)
+                    elif(int((tmp.split("_")[1])[1:]) == max_ver):
+                        tmp2.append(tmp)
+                temp = tmp2
+            logger.info("temp in the end lenght: %s" %len(temp))
+            if(len(temp) > 1):
+                logger.info("!!!!!!!!WARNING!!!!!!!!")
+                logger.info("!!!!!!!!WARNING!!!!!!!!")
+                logger.info("Something went wrong, there are more than one donwloaded file in the end")
+                logger.info("!!!!!!!!WARNING!!!!!!!!")
+                logger.info("!!!!!!!!WARNING!!!!!!!!")
+            else: 
+                final_list.append(temp[0])
+    return final_list
 
-
-#'DQM_V0001_R000000001__RelValMinBias_13TeV_pythia8__CMSSW_8_0_1-80X_mcRun2_asymptotic_v6_gcc530_gen-v1__DQMIO.root'
-
-
-def get_list_of_wf(refs, tars, unpaired, category):
+def deleteCrashedFiles(refs, tars):
     logger.info("***********************************************")
+    logger.info("deleteCrashedFiles")
+    logger.info("pTar lenght: %s" %len(refs))
+    logger.info("pRef lenght: %s" %len(tars))
+    temp_ref = []
+    temp_tar = tars
+    for r in refs:
+        logger.info("status %s" %r["status"])
+        logger.info("1 " + str((r["status"] == "downloaded")))
+
+        if ((r["status"] == "downloaded") or (r["status"] == "failed download")):
+            if (r["run_count"] > 0):
+                temp_ref.append(r)
+        else:
+            if ((r["status"] == "NoDQMIO") or (r["status"] == "failed_rqmgr")):
+                continue
+            logger.info("NoROOT or NoDQMIO or failed_rqmgr")
+            for t in tars:
+                if ((t["status"] != "NoDQMIO") and (t["status"] !="failed_rqmgr")):
+                    rn = r["ROOT_file_name_part"]
+                    tn = t["ROOT_file_name_part"]
+                    if ((rn.split("__")[0] == tn.split("__")[0])
+                        and (rn.split("__")[1].split("-")[1] == tn.split("__")[1].split("-")[1])):
+                        temp_tar[:] = [d for d in temp_tar if d.get('ROOT_file_name_part') != tn]
+    tars = []
+    refs = temp_ref    
+    for t in temp_tar:
+        if ((t["status"] == "downloaded") or (t["status"] == "failed download")):
+            if (t["run_count"] > 0):
+                tars.append(t)
+        else:
+            if ((t["status"] == "NoDQMIO") or (t["status"] =="failed_rqmgr")):
+                continue
+            logger.info("NoROOT or NoDQMIO or failed_rqmgr")
+            for r in temp_ref:
+                rn = r["ROOT_file_name_part"]
+                tn = t["ROOT_file_name_part"]
+                if ((rn.split("__")[0] == tn.split("__")[0])
+                    and (rn.split("__")[1].split("-")[1] == tn.split("__")[1].split("-")[1])):
+                    refs[:] = [d for d in refs if d.get('ROOT_file_name_part') != rn] 
+    return refs, tars
+
+
+    
+
+def get_list_of_wf(refs, tars, category):
+    logger.info("***********************************************")
+    logger.info("get_list_of_wf")
+    ref2 = []
+    tar2 = []
+    changed = False
     path = os.path.join(local_relmon_request, category["name"])
     wf_list = os.listdir(path)
     samples = {}
     wf_list.remove("cookie.txt")
-    unique_list = []
-    for wf in wf_list:
-        cms = wf.split("__")[2].split("-")[0]
-        unique_list.append(cms)
-        logger.info("%s /n" %wf)
-    logger.info("print entire list::: %s" %unique_list)
-    logger.info("***************************")
-    unique_list = list(set(unique_list))
-    # if(len(unique_list) == 1):
+    logger.info("size of REF: %s" %len(refs))
+    logger.info("size of Tar: %s" %len(tars))
+    cleaned_lists = deleteCrashedFiles(refs, tars)
+    refs = cleaned_lists[0]
+    tars = cleaned_lists[1]
+    logger.info("Cleaned lists sizes:")
+    logger.info("ref size: %s" %len(refs))
+    logger.info("tar size: %s" %len(tars))
+    if (len(tars) > len(refs)):
+        logger.info("sukeiciam listus vietomis")
+        temp = refs
+        refs = tars
+        tars = refs
+        changed = True
 
-    for var in unique_list:
-        samples[var] = [];
-    for wf in wf_list:
-        cms = wf.split("__")[2].split("-")[0]
-        samples[cms].append(wf)
-    logger.info("samples length: %s" %len(samples))
-    if (len(samples) > 2):
-        max1 = [k for k in samples.keys() if len(samples.get(k))==max([len(n) for n in samples.values()])]
-        refs = samples[max1]
-        del samples[max1]
-        max2 = [k for k in samples.keys() if len(samples.get(k))==max([len(n) for n in samples.values()])]
-        tars = samples[max2]
-        del samples[max2]
+    for ref in refs:
+        if ((ref["status"] == "NoDQMIO") or (ref["status"] == "NoROOT")):
+            logger.info("NoROOT or NoDQMIO") 
+        pRef = []
+        pTar = []
+        for tar in tars:
+            if ((tar["status"] == "NoDQMIO") or (tar["status"] == "NoROOT")):
+                logger.info("pyst ir continue   ")
+                continue
+            lref = ref["ROOT_file_name_part"]
+            ltar = tar["ROOT_file_name_part"]
+            if(ref["ROOT_file_name_part"].split("__")[0] == tar["ROOT_file_name_part"].split("__")[0]):
+                lref = ref["ROOT_file_name_part"].split("-")[1].split("_")[-1]
+                ltar = tar["ROOT_file_name_part"].split("-")[1].split("_")[-1]
+                if((category["name"] == "Data") and (lref != ltar)):
+                    continue
+                pTar.append(tar)
+            if (len(pTar) > 1):
+                logger.info("WARNING")
+                logger.info("RADO %s, I guess we need lengvish" %len(pTar))
+                logger.info("WARNING")
+                length = 20
+                tar3 = []
+                for p in pTar:
+                    logger.info("---------------------------")
+                    logger.info("%s" %ref["ROOT_file_name_part"])
+                    logger.info("%s" %p["ROOT_file_name_part"])
+                    logger.info("---------------------------")
+                    lref = ref["ROOT_file_name_part"].split("__")[1].split("-")[1]
+                    ltar = p["ROOT_file_name_part"].split("__")[1].split("-")[1]
+                    logger.info("%s \n%s \nlength: %s\n**************" %(lref, ltar, levenshtein(lref, ltar)))
+                    if(levenshtein(lref, ltar) < length):
+                        tar3 = []
+                        length = levenshtein(ltar, lref)
+                        tar3.append(p)
+                    elif (length == levenshtein(lref, ltar)):
+                        tar3.append(p)
+                pTar = tar3
+                logger.info("pTar length: %s" %len(pTar))
+        if (len(pTar) > 1):
+            logger.info("WARNING")
+            logger.info("WARNING")
+            logger.info("I DO NOT KNOW WHAT TO DO :(((( ")
+            logger.info("WANING")
+            logger.info("WANING")
+            logger.info("WANING")
+            logger.info("pTar has more than one element ://")
+        elif(len(pTar) < 1):
+            logger.info("pTar has less than one element ://")
+        elif(len(pTar) == 1):
+            logger.info("pTar has one element://")
+            logger.info("ref: %s" %ref["ROOT_file_name_part"])
+            logger.info("tar: %s" %pTar[0]["ROOT_file_name_part"])
+            ref2.append(ref)
+            tar2.append(pTar[0])
+
+    logger.info("pTar lenght: %s" %len(ref2))
+    logger.info("pRef lenght: %s" %len(tar2))
+
+    if (ref2 > 0 and tar2 > 0 and len(tar2)==len(ref2)):
+        logger.info("REFFFFF")
+        ref2 = get_downloaded_files_list(ref2, wf_list)
+        logger.info("TARRRRR")
+        tar2 = get_downloaded_files_list(tar2, wf_list)
+        logger.info("print REF:")
+        for x in ref2:
+            logger.info("%s\n" %x)
+        logger.info("print TAR:")
+        for x in tar2:
+            logger.info("%s\n" %x)
+    if (changed):
+        logger.info("change back lists")
+        return tar2, ref2
     else:
-        logger.info("sample0 %s" %(samples.keys()[0]))
-        logger.info("sample1 %s" %(samples.keys()[1]))
-        refs = samples[samples.keys()[0]]
-        tars = samples[samples.keys()[1]]
-    ref2 = refs
-    tars2 = tars
-    returned_lists = construct_final_lists(refs, tars)
-    refs = returned_lists[0]
-    tars = returned_lists[1]
-    logger.info("ref1 ir ref2 ilgiai: %s--->%s" %(len(ref2), len(refs)))
-    logger.info("tars1 ir tars2 ilgiai: %s--->%s" %(len(tars2), len(tars)))
-    if (tars2 == tars):
-        logger.info("tars and tars2 are equals")
-    
-    #Have only 2 lists of the biggest list. Others lists, with less variables are frozed.
-    #for (ref in refs)
-    return refs, tars, unpaired   
+        return ref2, tar2
+       
 
 def validate(category_name, HLT):
   #  global logFile
@@ -292,12 +377,13 @@ def validate(category_name, HLT):
         os.chmod(local_subreport, 0775)
     logger.info("abspath %s" %os.path.abspath(category_name))
     logger.info("local_subreport::; %s" %os.path.abspath(local_subreport))
-    tar_list = ["teststest"]
-    ref_list = []
-    unpaired_list = []
+    tar_list = category["lists"]["target"]
+    ref_list = category["lists"]["reference"]
     logger.info("final refssss pries: %s" %ref_list)
-    returned_lists = get_list_of_wf(ref_list, tar_list, unpaired_list, category)
+    returned_lists = get_list_of_wf(ref_list, tar_list, category)
     cat_path = category_name+"/"
+
+    logger.info("returned list::::\n%s" + str(returned_lists))
     ref_list = [cat_path + s for s in returned_lists[0]]
     tar_list = [cat_path + s for s in returned_lists[1]]
     logger.info("final refssss: %s" %ref_list)
@@ -314,20 +400,12 @@ def validate(category_name, HLT):
                       "-N 6",
                       "--hash_name"]
 
-        # validation_cmd = ["ValidationMatrix.py",
-    #                   "-a", os.path.abspath(category_name),
-    #                   "-o", os.path.abspath(local_subreport),
-    #                   "-N 6",
-    #                   "--hash_name"]
-
-    # logger.info("print validation_cmd2: %s" %validation_cmd2)
     logger.info("working dir: %s" %os.getcwd())
     logger.info("print validation_cmd: %s" %validation_cmd)
 
     if (HLT):
         validation_cmd.append("--HLT")
     logFile.write("!       SUBPROCESS: " + " ".join(validation_cmd) + "\n")
-    logger.info("! SUBPROCESS: %s" %(" ".join(validation_cmd)))
     logFile.flush()
     # return process exit code
     return subprocess.Popen(
@@ -335,9 +413,7 @@ def validate(category_name, HLT):
 
 
 def compress(category_name, HLT):
-    logger.info("catg name::: %s ir hlt::: %s" %(category_name, HLT))
     local_subreport = get_local_subreport_path(category_name, HLT)
-    logger.info("print local local_subreport: %s" %(local_subreport))
     dir2webdir_cmd = ['dir2webdir.py', local_subreport]
     logFile.write("!       SUBPROCESS:" + " ".join(dir2webdir_cmd) + "\n")
     logFile.flush()
@@ -359,14 +435,10 @@ def move_to_afs(category_name, HLT):
 
 for category in request.categories:
     ind = category["name"]
-    logger.info("category::: %s" %ind)
     if (not category["lists"]["target"]):
         continue
     if (category["name"] == "Generator" or category["HLT"] != "only"):
         # validate and compress; failure if either task failed
-        logger.info("i validate 200")
-        logger.info("kodas: %s" %(validate(category["name"], False)))
-        logger.info("kodas: %s" %(compress(category["name"], False)))
         if ((validate(category["name"], False) != 0) or
             (compress(category["name"], False) != 0)):
             # then:
@@ -376,7 +448,6 @@ for category in request.categories:
     if (category["name"] == "Generator"):
         continue
     if (category["HLT"] != "no"):
-        logger.info("i validate 210")
         if ((validate(category["name"], True) != 0) or
             (compress(category["name"], True) != 0)):
             finalize_report_generation("failed")

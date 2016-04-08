@@ -76,6 +76,8 @@ for category in request.categories:
             existing_sample["name"],
             category["name"])
         for sample in sample_list:
+            logger.debug("***************************************************************")
+            logger.debug("sample::: %s " %sample["name"])
             if (sample["status"] != "ROOT"):
                 continue
             file_count = 0
@@ -115,7 +117,7 @@ for category in request.categories:
                         "/lists/" + lname + "/samples/" + sample["name"],
                         data=json.dumps(sample),
                         headers={"Cookie": cookie})
-                elif ((file_count < sample["run_count"]) or (sample["run_count"] == 0)):
+                elif ((file_count < sample["run_count"]) or (sample["run_count"] == 0) or (file_count < sample["root_count"])):
                     sample["status"] = "failed download"
                     # TODO: handle failures (request)
                     cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)

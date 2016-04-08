@@ -4,19 +4,39 @@
 
 var relmon_request_service_frontend = angular.module(
     "relmon_request_service_frontend",
-    ["ui.bootstrap"]
-);
+    ["ui.bootstrap", "ngRoute"]
+)
+// relmon_request_service_frontend.config(
+//     function($locationProvider) {
+//         // $locationProvider.html5Mode(true).hashPrefix('!');
+// });
+// relmon_request_service_frontend.config( 
+//   function($routeProvider) {
+//     console.log($location)
+//     $routeProvider
+//       .when("/relmonsvc/", {
+//         templateUrl: "index.htm",
+//         controller: "Request_controller"
+//       })
+//       .otherwise({redirectTo:"/relmonsvc"});
+//   });
+
 
 relmon_request_service_frontend.controller(
-    "Request_controller",
-    ["$http", "$modal", "$location", Request_controller]
-);
+    "Request_controller", 
+    ["$http", "$modal", "$location", "$anchorScroll", "$scope", "$routeParams", "$document", Request_controller
+    ]);
+
+// relmon_request_service_frontend.controller(
+//     "Request_controller",
+//     ["$http", "$modal", "$location", "$anchorScroll", "$scope", Request_controller]
+// );
 
 function Request_controller_exception(message) {
     this.message = message;
 }
 
-function Request_controller($http, $modal, $location) {
+function Request_controller($http, $modal, $location, $anchorScroll, $scope, $routeParams, $document) {
 
 // public properties
     this.sample_inputs = [];
@@ -38,9 +58,23 @@ function Request_controller($http, $modal, $location) {
 
 // private functions
 
-    /*
+    /*(function() {
+  var myApp = angular.module('myApp', ['ngRoute']);
+  
+  myApp.config( 
+  function($routeProvider) {
+    $routeProvider
+      .when("/main", {
+        templateUrl: "main.html",
+        controller: "MainController"
+      })
+      .otherwise({redirectTo:"/main"});
+  });
+}());
      * 
      */
+
+
     function reset_sample_inputs() {
         me.sample_inputs = [];
         for (var x in report_categories) {
@@ -68,6 +102,7 @@ function Request_controller($http, $modal, $location) {
     /*
      * 
      */
+
     function prepare_new_request_post_data() {
         var all_sample_lists_empty = true;
         // var exist_nonmatching_lists --
@@ -267,8 +302,21 @@ function Request_controller($http, $modal, $location) {
         );
     }
 
+
+    this.scrollTo = function(request_id) {
+        console.log('console:: %s')
+        var id = "/" + request_id
+        console.log(id)
+        var old = $location.hash();
+        $location.hash(request_id);
+        $anchorScroll()
+        $location.hash(old);
+        // $location.hash(request_id);
+    }
+
     this.post_edit = function(relmon_request, index) {
         reset_sample_inputs();
+        $anchorScroll()
         $http.get("requests/" + relmon_request).success(function(data, status){
             _.each(data.categories, function(val, categIndex){
                 correctIndex = report_categories.indexOf(val.name);
@@ -282,13 +330,17 @@ function Request_controller($http, $modal, $location) {
             me.old_name = data.name;
             me.new_request_name = data.name;
             me.new_request_collapsed = false;
+            // console.log("coa")
+            // console.log(data.categories)
+            // console.log(data.categories.HLT)
+
         });
 
         me.internal_id = relmon_request;
     }
 
     this.checkEditOrSubmit = function(){
-        if ((me.new_request_name + "") == me.old_name) {
+        if ((me.new_request_name + " ") == me.old_name) {
             me.action_name = "Edit"
         } else {
             me.action_name = "Submit"
@@ -320,13 +372,33 @@ function Request_controller($http, $modal, $location) {
         });
         return modal_inst;
     };
+    console.log($scope.param);
+    console.log("hash");
+    console.log($location.hash());
+    console.log("vieta:");
+    console.log(window.location.href);
+    console.log("host url");
+    console.log(window.location.href.toString().split("/")[4])
+    if (window.location.href.toString().split("/")[4] == "#"){
+        console.log("traraaa")
+        this.scrollTo(window.location.href.toString().split("/").pop())
+    }
 
+
+
+        // $anchorScroll()
+        // $location.hash(old);
 
 
 // init stuff
+    $scope.param = $routeParams.param;
+    console.log($scope.param);
+    console.log($routeParams.param);
+    
     reset_sample_inputs();
     this.get_user_info()
     this.get_requests();
+    // this.scrollTo(window.location.href.toString().split("/").pop())
 }
 
 // modal controllers
@@ -351,3 +423,5 @@ relmon_request_service_frontend.controller(
         };
 
 });
+
+
