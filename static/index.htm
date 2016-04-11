@@ -113,7 +113,7 @@
           <tr ng-repeat="request in request_controller.relmon_requests">
             <td>
               <ul  style="word-wrap: break-word; word-break: break-all;" class="list-group">
-                <li class="list-group-item"><a ng-click="request_controller.scrollTo(request.id_).focus()" id="{{request.id_}}" ng-href="#{{request.id_}}" target="_self">Id: {{request.id_}}</a></li>
+                <li class="list-group-item"><a ng-click="request_controller.scrollTo(request.id_).focus()" id="/{{request.id_}}" href="#/{{request.id_}}" target="_self">Id: {{request.id_}}</a></li>
                 <li class="list-group-item">Name:</br>{{request.name}}</li>
                 <li class="list-group-item">Status: 
                   <span ng-class="request.status=='failed' ? 'text-danger' : 'text-info'">
@@ -122,7 +122,7 @@
                 </li>
                 <li class="list-group-item">Threshold: {{request.threshold}}</li>
                 <li ng-if="request.log" class="list-group-item">
-                  <a  href="requests/{{request.id_}}/log">Log file</a>
+                  <a  href="requests/{{request.id_}}.log">Log file</a>
                 </li>
                 <li class="list-group-item">
                   <button class="btn btn-danger btn-xs"

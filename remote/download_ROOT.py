@@ -35,8 +35,10 @@ args = parser.parse_args()
 # get relmon
 cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
 if (cookie is None):
-    logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
-    exit(1)
+    cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
+    if (cookie is None):
+        logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
+        exit(1)
 status, data = utils.httpsget(
     CONFIG.SERVICE_HOST,
     CONFIG.SERVICE_BASE + "/requests/" + str(args.id_),
@@ -104,11 +106,6 @@ for category in request.categories:
               
                 if ((file_count >= sample["run_count"] and sample["run_count"] != 0)):
                     sample["status"] = "downloaded"
-                    cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
-                    if (cookie is None):
-                        logger.error("Failed getting sso cookies for " +
-                                     CONFIG.SERVICE_HOST)
-                        # exit(1)
                     status, data = utils.https(
                         "PUT",
                         CONFIG.SERVICE_HOST,
@@ -119,12 +116,6 @@ for category in request.categories:
                         headers={"Cookie": cookie})
                 elif ((file_count < sample["run_count"]) or (sample["run_count"] == 0) or (file_count < sample["root_count"])):
                     sample["status"] = "failed download"
-                    # TODO: handle failures (request)
-                    cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
-                    if (cookie is None):
-                        logger.error("Failed getting sso cookies for " +
-                                     CONFIG.SERVICE_HOST)
-                        # exit(1)
                     status, data = utils.https(
                         "PUT",
                         CONFIG.SERVICE_HOST,

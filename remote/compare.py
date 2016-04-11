@@ -12,6 +12,7 @@ import argparse
 import httplib
 import subprocess
 import shutil
+import glob
 import numpy as np
 from config import CONFIG
 from common import utils, relmon
@@ -38,8 +39,10 @@ args = parser.parse_args()
 # get RelMon
 cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
 if (cookie is None):
-    logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
-    exit(1)
+    cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
+    if (cookie is None):
+        logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
+        exit(1)
 status, data = utils.httpsget(
     CONFIG.SERVICE_HOST,
     CONFIG.SERVICE_BASE + "/requests/" + args.id_,
@@ -54,27 +57,39 @@ logger.info("request: %s" %request)
 local_relmon_request = os.path.abspath(
     os.path.join("requests", str(request.id_)))
 os.chdir(local_relmon_request)
-
+if (os.path.isdir(os.path.join(local_relmon_request, "reports"))):
+    logger.info("report category already exist1")
 local_reports = os.path.join(local_relmon_request, "reports")
+if (os.path.isdir(local_reports)):
+    logger.info("report category already exist2")
+    shutil.rmtree(local_reports)
+else:
+    logger.info("report category doesn't exist1")
 
 logger.info("local_reports::: %s " %local_reports)
+
 # TODO: handle failures
 logFile = open(str(request.id_) + ".log", "w")
 os.chmod(str(request.id_) + ".log", 0664)
 
+if (os.path.isdir(os.path.join(CONFIG.RELMON_PATH, request.name))):
+    logger.info("remote exist1")
 remote_reports = os.path.join(CONFIG.RELMON_PATH, request.name)
-
+if (os.path.isdir(remote_reports)):
+    logger.info("remote exist2")
+    shutil.rmtree(remote_reports)
 logger.info("remote_reports:: %s" %remote_reports)
 def upload_log():
-    global request
-    cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
+    global request, cookie
     if (cookie is None):
-        logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
-        exit(1)
+        cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
+        if (cookie is None):
+            logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
+            exit(1)
     status, data = utils.https(
         "POST",
         CONFIG.SERVICE_HOST,
-        CONFIG.SERVICE_BASE + "/requests/" + str(request.id_) + "/log",
+        CONFIG.SERVICE_BASE + "/requests/" + str(request.id_) + ".log",
         data=open(str(request.id_) + ".log", "rb"),
         headers={"Cookie": cookie})
     if (status != httplib.OK):
@@ -84,11 +99,12 @@ def upload_log():
 
 # TODO: think of other ways for controllers to know about failures/success
 def put_status(status):
-    global logFile, request
-    cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
+    global logFile, request, cookie
     if (cookie is None):
-        logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
-        exit(1)
+        cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
+        if (cookie is None):
+            logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
+            exit(1)
     status, data = utils.https(
         "PUT",
         CONFIG.SERVICE_HOST,
@@ -188,7 +204,7 @@ def get_downloaded_files_list(givenList, wf_list):
                     logger.info("max version: %s" %max_ver)
                     logger.info("To check max Version: \n%s" %tmp)
                     if (int((tmp.split("__")[2].split("-")[-1])[1:]) > max_ver):
-                        max_ver = int((tmp.split("-")[2].split("__")[0])[1:])
+                        max_ver = int((tmp.split("__")[2].split("-")[-1])[1:])
                         tmp2 = []
                         tmp2.append(tmp)
                     elif(int((tmp.split("__")[2].split("-")[-1])[1:]) == max_ver):
@@ -271,10 +287,13 @@ def get_list_of_wf(refs, tars, category):
     ref2 = []
     tar2 = []
     changed = False
+    old_ctg = os.getcwd()
     path = os.path.join(local_relmon_request, category["name"])
-    wf_list = os.listdir(path)
+    os.chdir(path)
+    wf_list = glob.glob("*.root")
+    os.chdir(old_ctg)
+
     samples = {}
-    wf_list.remove("cookie.txt")
     logger.info("size of REF: %s" %len(refs))
     logger.info("size of Tar: %s" %len(tars))
     cleaned_lists = deleteCrashedFiles(refs, tars)

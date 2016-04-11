@@ -308,9 +308,14 @@ function Request_controller($http, $modal, $location, $anchorScroll, $scope, $ro
         var id = "/" + request_id
         console.log(id)
         var old = $location.hash();
+        console.log(old)
         $location.hash(request_id);
+        console.log("davem id_")
+        console.log($location.hash(request_id))
         $anchorScroll()
+        console.log("anchorScroll")
         $location.hash(old);
+        return false
         // $location.hash(request_id);
     }
 
@@ -378,17 +383,11 @@ function Request_controller($http, $modal, $location, $anchorScroll, $scope, $ro
     console.log("vieta:");
     console.log(window.location.href);
     console.log("host url");
-    console.log(window.location.href.toString().split("/")[4])
-    if (window.location.href.toString().split("/")[4] == "#"){
-        console.log("traraaa")
-        this.scrollTo(window.location.href.toString().split("/").pop())
-    }
-
+    
 
 
         // $anchorScroll()
         // $location.hash(old);
-
 
 // init stuff
     $scope.param = $routeParams.param;
@@ -398,6 +397,25 @@ function Request_controller($http, $modal, $location, $anchorScroll, $scope, $ro
     reset_sample_inputs();
     this.get_user_info()
     this.get_requests();
+    if (window.location.href.toString().split("/")[4] == "#"){
+        console.log("hash");
+        console.log($location.hash());
+        console.log("vieta:");
+        console.log(window.location.href);
+        console.log("host url");
+        console.log(window.location.href.toString().split("#")[1])
+        console.log((window.location.href.toString().split("#")[1]).substr(1))
+        var a = (window.location.href.toString().split("#")[1]).substr(1)
+        console.log("a" + a)
+        var c = window.location.href.toString().split("#")[0]
+        console.log("c" + c)
+        var b = [window.location.href.toString().split("#")[0], (window.location.href.toString().split("#")[1]).substr(1)]
+        b = b.join("#")
+        console.log("b" + b)
+
+        console.log("kazkas vyksta")
+        this.scrollTo(window.location.href.toString().split("/").pop())
+    }
     // this.scrollTo(window.location.href.toString().split("/").pop())
 }
 

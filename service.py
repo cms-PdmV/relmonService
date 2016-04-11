@@ -39,8 +39,8 @@ api.add_resource(resources.Sample,
                  "lists/<string:sample_list>/samples/<string:sample_name>",
                  endpoint="sample")
 api.add_resource(resources.RequestLog,
-                 "/requests/<int:request_id>/log",
-                 endpoint="log")
+                 "/requests/<int:request_id>.log",
+                 endpoint=".log")
 api.add_resource(resources.RequestStatus,
                  "/requests/<int:request_id>/status",
                  endpoint="status")

@@ -27,8 +27,10 @@ args = parser.parse_args()
 # get RelMon
 cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
 if (cookie is None):
-    logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
-    exit(1)
+    cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
+    if (cookie is None):
+        logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
+        exit(1)
 status, data = utils.httpsget(
     CONFIG.SERVICE_HOST,
     CONFIG.SERVICE_BASE + "/requests/" + args.id_,
@@ -40,10 +42,11 @@ request = relmon.RelmonRequest(**json.loads(data))
 
 
 def send_delete_terminator():
-    cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
     if (cookie is None):
-        logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
-        exit(1)
+        cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
+        if (cookie is None):
+            logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
+            exit(1)
     status, data = utils.https(
         "DELETE",
         CONFIG.SERVICE_HOST,
