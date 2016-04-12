@@ -16,10 +16,9 @@ import json
 import httplib
 import time
 
-
 try:
-    import crontab
     import paramiko
+    import crontab
 except ImportError as ex:
     print "importing failed...."+ str(ex)
     pass
