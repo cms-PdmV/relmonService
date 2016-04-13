@@ -25,6 +25,7 @@ parser.add_argument(dest="id_", help="FIXME: id help")
 args = parser.parse_args()
 
 # get RelMon
+cookie = None
 cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
 if (cookie is None):
     cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
@@ -42,6 +43,8 @@ request = relmon.RelmonRequest(**json.loads(data))
 
 
 def send_delete_terminator():
+    cookie = None
+    cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
     if (cookie is None):
         cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
         if (cookie is None):
