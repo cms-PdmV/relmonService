@@ -13,7 +13,7 @@ import json
 import time
 
 from config import CONFIG
-from common import relmon
+import common
 
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ if not os.path.isfile(CONFIG.DATA_FILE_NAME):
 else:
     with open(CONFIG.DATA_FILE_NAME) as json_file:
         for request_json in json.load(json_file):
-            request = relmon.RelmonRequest(**request_json)
+            request = common.relmon.RelmonRequest(**request_json)
             relmons[request.id_] = request
 
 
@@ -61,6 +61,10 @@ def updateEntireRequest(request_id, req_data):
 def drop(request_id):
     logger.info("Dropping RelmonRequest " + str(request_id))
     with lock:
+        os.chdir(os.path.join(CONFIG.SERVICE_WORKING_DIR, "logs"))
+        if (os.path.isfile(str(request_id)+".log")):
+            os.remove((str(request_id)+".log"))
+        os.chdir(CONFIG.SERVICE_WORKING_DIR)
         relmons.pop(request_id)
         _write()
     logger.info("RelmonRequest droped")
