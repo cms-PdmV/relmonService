@@ -245,7 +245,6 @@ def deleteCrashedFiles(refs, tars):
     temp_tar = tars
     for r in refs:
         logger.info("status %s" %r["status"])
-        logger.info("1 " + str((r["status"] == "downloaded")))
 
         if ((r["status"] == "downloaded") or (r["status"] == "failed download")):
             if (r["run_count"] > 0):

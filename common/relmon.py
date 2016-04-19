@@ -7,12 +7,16 @@ except ImportError:
     class NullHandler(logging.Handler):
         def emit(self, record):
             pass
+import traceback
 import fractions
 import Queue
 import threading
 import time
 import json
 import itertools
+import inspect
+
+from threading import Thread
 
 try:
     import paramiko
@@ -20,8 +24,7 @@ except ImportError:
     pass
 
 from config import CONFIG
-from common import utils
-
+import common
 
 logger = logging.getLogger(__name__)
 logger.addHandler(NullHandler())
@@ -153,27 +156,111 @@ class RelmonRequest():
                     yield sample
 
 
-class Worker(threading.Thread):
+class Worker(Thread):
     """Documentation for Worker
 
     """
     def __init__(self):
         super(Worker, self).__init__()
+        #Thread.__init__(self)
+        #self.task = tasks
+        #sel.worker_name = name
 
+    
     def stop(self):
         raise NotImplementedError("Workers should implement 'stop' method.")
 
 
-class StatusUpdater(Worker):
+class BeastBornToCompare():
+    def __init__(self, command, request):
+        self.request = request
+        self.command = command
+        self.ssh_client = paramiko.SSHClient()
+        self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.ret_code = None
+        logger.debug("BeastBornToCompare Initializing finished")
+
+    def run(self):
+        logger.info("BeastBornToCompare run\n " + self.command)
+        try:
+            common.shared.update(self.request.id_)
+            self.request.status = "comparing"
+            common.shared.update(self.request.id_)
+            self.ssh_client.connect(CONFIG.REMOTE_HOST,
+                                    username=credentials["username"],
+                                    password=credentials["password"])
+            # NOTE exec_command timeout does not work. Think of something..
+            (_, stdout, stderr) = self.ssh_client.exec_command(self.command)
+            logger.debug("STDOUT: %s" % (stdout.read()))
+            logger.debug("STDERR: %s" % (stderr.read()))
+            self.ret_code = stdout.channel.recv_exit_status()
+            logger.warning("EXECUTING BeastBornToCompare!!!!")
+            # self.ret_code = 1
+            if (self.ret_code != 0):
+                logger.error("Remote command '" + self.command +
+                             "' returned with code " + str(self.ret_code) +
+                             ". More info might be found in log files at " +
+                             CONFIG.REMOTE_HOST + ':' + CONFIG.REMOTE_WORK_DIR)
+            self.ssh_client.close()
+            common.shared.update(self.request.id_)
+        except:
+            logger.exception("Uncaught exception in BeastBornToCompare run")
+            raise
+        finally:
+            logger.info("Finished BeastBornToCompare")
+
+class BeastBornToDownload():
+    def __init__(self, command, request):
+        self.request = request
+        self.command = command
+        self.ssh_client = paramiko.SSHClient()
+        self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.ret_code = None
+        logger.debug("BeastBornToDownload Initializing finished")
+
+    def run(self):
+        logger.info("BeastBornToDownload run\n " + self.command)
+        try:
+            self.ssh_client.connect(CONFIG.REMOTE_HOST,
+                                    username=credentials["username"],
+                                    password=credentials["password"])
+            # NOTE exec_command timeout does not work. Think of something..
+            (_, stdout, stderr) = self.ssh_client.exec_command(self.command)
+            logger.debug("STDOUT: %s" % (stdout.read()))
+            logger.debug("STDERR: %s" % (stderr.read()))
+            self.ret_code = stdout.channel.recv_exit_status()
+            logger.warning("EXECUTING BeastBornToDownload!!!!")
+            # self.ret_code = 1
+            if (self.ret_code != 0):
+                logger.error("Remote command '" + self.command +
+                             "' returned with code " + str(self.ret_code) +
+                             ". More info might be found in log files at " +
+                             CONFIG.REMOTE_HOST + ':' + CONFIG.REMOTE_WORK_DIR)
+            self.ssh_client.close()
+            logger.info("BeastBornToDownload ID: %s" %self.request.id_)
+            common.shared.update(self.request.id_)
+            if (self.request.has_ROOT()):
+                logger.info("RR has 'ROOT' workflows. Sleeping")
+                time.sleep(CONFIG.TIME_BETWEEN_DOWNLOADS)
+                logger.info("Waking up")
+            else:
+                self.request.status = "downloaded"
+                logger.info("RR is/changed to  downloaded")
+        except:
+            logger.exception("Uncaught exception in BeastBornToDownload run")
+            raise
+        finally:
+            logger.info("Finished BeastBornToDownload")
+
+
+class StatusUpdater():
     """Documentation for StatusUpdater
 
     """
     def __init__(self, request):
-        super(StatusUpdater, self).__init__()
         self.request = request
         self._stop = False
 
-    def run(self):
         """Update sample statuses and return count of samples that changed
         their statuses to 'ROOT' by this update"""
         logger.info("Runing StatusUpdater for RR " + str(self.request.id_))
@@ -195,7 +282,7 @@ class StatusUpdater(Worker):
         for sample in self.request.samples_iter(["initial", "waiting"]):
             if (self._stop):
                 return
-            DQMIO_status, DQMIO_string = utils.get_DQMIO_status(sample["name"])
+            DQMIO_status, DQMIO_string = common.utils.get_DQMIO_status(sample["name"])
             if (self._stop):
                 return
             self.request.get_access()
@@ -216,14 +303,14 @@ class StatusUpdater(Worker):
                 self.request.release_access()
                 return
             sample["ROOT_file_name_part"] = (
-                utils.get_ROOT_name_part(sample["DQMIO_string"]))
+                common.utils.get_ROOT_name_part(sample["DQMIO_string"]))
         self.request.release_access()
 
     def update_run_counts(self):
         for sample in self.request.samples_iter(["DQMIO"]):
             if (self._stop):
                 return
-            run_count = utils.get_run_count(sample["DQMIO_string"])
+            run_count = common.utils.get_run_count(sample["DQMIO_string"])
             if (self._stop):
                 return
             self.request.get_access()
@@ -238,7 +325,7 @@ class StatusUpdater(Worker):
             if (self._stop):
                 return
             wm_status = (
-                utils.get_workload_manager_status(sample["name"], self.request.lastUpdate))
+                common.utils.get_workload_manager_status(sample["name"], self.request.lastUpdate))
             if (sample["wm_status"] == wm_status):
                 continue
             if (self._stop):
@@ -260,7 +347,7 @@ class StatusUpdater(Worker):
             if (self._stop):
                 return
             for sample_index in range(len(sample_list)):
-                file_urls = utils.get_ROOT_file_urls(
+                file_urls = common.utils.get_ROOT_file_urls(
                     sample_list[sample_index]["name"],
                     category["name"])
                     # FIXME: temporary solution
@@ -304,68 +391,151 @@ class StatusUpdater(Worker):
         self._stop = True
         logger.info("Stopping StatusUpdater for RR " + str(self.request.id_))
 
-class SSHWorker(Worker):
-    def __init__(self, command):
-        super(SSHWorker, self).__init__()
-        self.command = command
-        self.ssh_client = paramiko.SSHClient()
-        self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.ret_code = None
 
-    def run(self):
-        logger.info("SSHWorker run " + self.command)
-        try:
-            self.ssh_client.connect(CONFIG.REMOTE_HOST,
-                                    username=credentials["username"],
-                                    password=credentials["password"])
-            # NOTE exec_command timeout does not work. Think of something..
-            (_, stdout, stderr) = self.ssh_client.exec_command(self.command)
-            self.ret_code = stdout.channel.recv_exit_status()
-            if (self.ret_code != 0):
-                logger.error("Remote command '" + self.command +
-                             "' returned with code " + str(self.ret_code) +
-                             ". More info might be found in log files at " +
-                             CONFIG.REMOTE_HOST + ':' + CONFIG.REMOTE_WORK_DIR)
-            self.ssh_client.close()
-        except:
-            logger.exception("Uncaught exception in SSHWorker run")
-            raise
-        finally:
-            logger.info("Finished SSHWorker")
+# class SSHWorker(Worker):
+#     def __init__(self, command):
+#         super(SSHWorker, self).__init__()
+#         self.command = command
+#         self.ssh_client = paramiko.SSHClient()
+#         self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+#         self.ret_code = None
+
+#     def run(self):
+#         logger.info("SSHWorker run " + self.command)
+#         try:
+#             self.ssh_client.connect(CONFIG.REMOTE_HOST,
+#                                     username=credentials["username"],
+#                                     password=credentials["password"])
+#             # NOTE exec_command timeout does not work. Think of something..
+#             (_, stdout, stderr) = self.ssh_client.exec_command(self.command)
+#             self.ret_code = stdout.channel.recv_exit_status()
+#             if (self.ret_code != 0):
+#                 logger.error("Remote command1 '" + self.command +
+#                              "' returned with code " + str(self.ret_code) +
+#                              ". More info might be found in log files at " +
+#                              CONFIG.REMOTE_HOST + ':' + CONFIG.REMOTE_WORK_DIR)
+#             self.ssh_client.close()
+#         except:
+#             logger.exception("Uncaught exception in SSHWorker run")
+#             raise
+#         finally:
+#             logger.info("Finished SSHWorker")
+        # if (self._stop):
+        #     if (self._terminate):
+        #         self._clean()
+        #     return False
+        # shared.update(self.request.id_)
+        # if (self.worker.ret_code != 0):
+        #     logger.error("Report generating on remote machine failed")
+        #     self.request.get_access()
+        #     try:
+        #         self.request.status = "failed"
+        #     finally:
+        #         self.request.release_access()
+        #         return False
+
+
 
     def stop(self):
         self.ssh_client.close()
         logger.info("Stopping SSHWorker")
 
 
-class Downloader(SSHWorker):
-    """Documentation for Downloader
+# class Downloader(SSHWorker):
+#     """Documentation for Downloader
 
-    """
-    def __init__(self, request):
-        super(Downloader, self).__init__(
-            "cd " + CONFIG.REMOTE_WORK_DIR + ';' +
-            "./download_ROOT.py " + str(request.id_) +
-            " > download_ROOT.out 2>&1")
+#     """
+#     def __init__(self, request):
+#         super(Downloader, self).__init__(
+#             "cd " + CONFIG.REMOTE_WORK_DIR + ';' +
+#             "./download_ROOT.py " + str(request.id_) +
+#             " > download_ROOT.out 2>&1")
 
 
-class Reporter(SSHWorker):
+class ThreadPool:
+    """Pool of threads consuming tasks from a queue"""
+    def __init__(self, name):
+        self.tasks = Queue.Queue(0)
+        self.name = name
+        Reporter(self.tasks, self.name)
+
+
+
+    def add_task(self, func, *args, **kargs):
+        """Add a task to the queue"""
+        # logger.debug("Method was callebd by: %s" % ("\n".join(inspect.stack()[1][3])))
+        # logger.debug("Method was callebd by: %s" %traceback.print_stack())
+
+        logger.info("Adding a task: %s to the Queue %s. Currently in Queue: %s" % (
+                func, id(self.tasks), self.get_queue_length()))
+
+        self.tasks.put((func, args, kargs))
+
+    def wait_completion(self):
+        """Wait for completion of all the tasks in the queue"""
+        self.tasks.join()
+
+    def get_queue_length(self):
+        """Return the number of tasks waiting in the Queue"""
+        return self.tasks.qsize()
+
+
+class Reporter(Thread):
     """Documentation for Reporter
 
     """
-    def __init__(self, request):
-        super(Reporter, self).__init__(
-            "cd " + CONFIG.REMOTE_CMSSW_DIR + ';' +
-            "eval `scramv1 runtime -sh`" +
-            "cd " + CONFIG.REMOTE_WORK_DIR + ';' +
-            "./compare.py " + str(request.id_) + " > compare.out 2>&1")
+    def __init__(self, tasks, name):
+        Thread.__init__(self)
+        self.tasks = tasks
+        self.daemon = True
+        logger.info("name:: " + name)
+        self.worker_name = name
+        self.start()
 
+    def run(self):
+        while True:
+            func, args, kargs = self.tasks.get()
+            try:
+                logger.info("Worker %s acquired task: %s" % (self.worker_name, func))
+                func(*args, **kargs)
+            except Exception, e:
+                logger.error("Exception in thread: %s Traceback:\n%s" % (
+                        str(e), traceback.format_exc()))
+                logger.error("Exception in %s thread: %s Traceback:\n%s" % (
+                        self.worker_name, str(e), traceback.format_exc()))
 
-class Cleaner(SSHWorker):
-    """Documentation for Cleaner
+                self.tasks.task_done() ## do we want to mark task_done if it crashed?
+                logger.info("returninam 456")
+                return False
+            logger.info("returninam 458")
+            self.tasks.task_done()
+            logger.info("returninam 460")
+            return True
 
-    """
-    def __init__(self, request):
-        super(Cleaner, self).__init__(
-            "cd " + CONFIG.REMOTE_WORK_DIR + ';' +
-            "./clean.py " + str(request.id_) + " > clean.out 2>&1")
+# self.worker.join()
+        # if (self._stop):
+        #     if (self._terminate):
+        #         self._clean()
+        #     return False
+        # shared.update(self.request.id_)
+        # if (self.worker.ret_code != 0):
+        #     logger.error("Report generating on remote machine failed")
+        #     self.request.get_access()
+        #     try:
+        #         self.request.status = "failed"
+        #     finally:
+        #         self.request.release_access()
+        #         return False
+
+# class Cleaner(SSHWorker):
+#     """Documentation for Cleaner
+
+#     """
+#     def __init__(self, request):
+#         super(Cleaner, self).__init__(
+#             "cd " + CONFIG.REMOTE_WORK_DIR + ';' +
+#             "./clean.py " + str(request.id_) + " > clean.out 2>&1")
+
+reports_queue = ThreadPool('Class_Comparer')
+downloads_queue = ThreadPool('Belarus_Downloader')
+cleaners_queue = ThreadPool('NewHolland_Cleaner')

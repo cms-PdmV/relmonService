@@ -52,7 +52,7 @@ logger.info("Flask resources atached")
 
 try:
     utils.init_validation_logs_dir()
-    utils.prepare_remote()
+    # utils.prepare_remote()
     utils.init_authentication_ticket_renewal()
     controllers.init_controllers()
     logger.info("Controllers initialized")

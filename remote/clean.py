@@ -41,7 +41,6 @@ if (status != httplib.OK):
     exit(1)
 request = relmon.RelmonRequest(**json.loads(data))
 
-
 def send_delete_terminator():
     cookie = None
     cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
@@ -59,6 +58,7 @@ def send_delete_terminator():
     if (status != httplib.OK):
         # FIXME: solve this problem
         print("konkreciai juokutis")
+
 
 # do cleaning
 if (os.path.exists(os.path.join("requests", str(request.id_)))):
