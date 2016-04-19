@@ -72,8 +72,8 @@ logFile = open(str(request.id_) + ".log", "w")
 os.chmod(str(request.id_) + ".log", 0664)
 
 remote_reports = os.path.join(CONFIG.RELMON_PATH, request.name)
-if (os.path.isdir(remote_reports)):
-    shutil.rmtree(remote_reports)
+# if (os.path.isdir(remote_reports)):
+#     shutil.rmtree(remote_reports)
 logger.info("remote_reports:: %s" %remote_reports)
 def upload_log():
     global request
@@ -236,47 +236,109 @@ def get_downloaded_files_list(givenList, wf_list):
                 final_list.append(temp[0])
     return final_list
 
-def deleteCrashedFiles(refs, tars):
+def deleteCrashedFiles(refs, tars, category_name):
     logger.info("***********************************************")
     logger.info("deleteCrashedFiles")
-    logger.info("pTar lenght: %s" %len(refs))
-    logger.info("pRef lenght: %s" %len(tars))
+    logger.info("REF lenght: %s" %len(refs))
+    logger.info("Tar lenght: %s" %len(tars))
     temp_ref = []
     temp_tar = tars
     for r in refs:
-        logger.info("status %s" %r["status"])
-        logger.info("1 " + str((r["status"] == "downloaded")))
-
+        tmps = []
+        logger.info("%s status %s" %(r["name"],r["status"]))
         if ((r["status"] == "downloaded") or (r["status"] == "failed download")):
             if (r["run_count"] > 0):
+                logger.info("Ref: %s good. Add to list." %r["ROOT_file_name_part"])
                 temp_ref.append(r)
         else:
             if ((r["status"] == "NoDQMIO") or (r["status"] == "failed_rqmgr")):
                 continue
             logger.info("NoROOT or NoDQMIO or failed_rqmgr")
-            for t in tars:
-                if ((t["status"] != "NoDQMIO") and (t["status"] !="failed_rqmgr")):
+            if(category_name == "Data"):
+                for t in tars:
+                    if ((t["status"] != "NoDQMIO") and (t["status"] !="failed_rqmgr")):
+                        rn = r["ROOT_file_name_part"]
+                        tn = t["ROOT_file_name_part"]
+                        if ((rn.split("__")[0] == tn.split("__")[0])
+                            and (rn.split("__")[1].split("-")[1] == tn.split("__")[1].split("-")[1])):
+                            temp_tar[:] = [d for d in temp_tar if d.get('ROOT_file_name_part') != tn]
+            else:
+                for t in tars:
+                    if ((t["status"] != "NoDQMIO") and (t["status"] !="failed_rqmgr")):
+                        rn = r["ROOT_file_name_part"]
+                        tn = t["ROOT_file_name_part"]    
+                        if (rn.split("__")[0] == tn.split("__")[0]):
+                            tmps.append(t)
+                if(len(tmps)>1):
+                    length = 100
+                    for p in tmps:
+                        logger.info("%s" %ref["ROOT_file_name_part"])
+                        logger.info("%s" %p["ROOT_file_name_part"])
+                        lref = ref["ROOT_file_name_part"].split("__")[1].split("-")[1]
+                        ltar = p["ROOT_file_name_part"].split("__")[1].split("-")[1]
+                        logger.info("%s \n%s \nlength: %s\n**************" %(lref, ltar, levenshtein(lref, ltar)))
+                        if(levenshtein(lref, ltar) < length):
+                            length = levenshtein(ltar, lref)
+                            tar_to_rm = p["ROOT_file_name_part"]
+                        elif (length == levenshtein(lref, ltar)):
+                            logger.info("DANGER!!")
+                            logger.info("Sorry, but we have found more than 1, so it will crash later :(. We take only first")
+                            logger.info("DANGER!!")
+                    temp_tar[:] = [d for d in temp_tar if d.get('ROOT_file_name_part') != tar_to_rm]
+                elif(len(tmps)==1):
+                    logger.info("tmps root name: %s" %tmps[0]["ROOT_file_name_part"])
+                    tar_to_rm = tmps[0]["ROOT_file_name_part"]
+                    temp_tar[:] = [d for d in temp_tar if d.get('ROOT_file_name_part') != tar_to_rm]
+    logger.info("After cleaning refs size change from %s to %s" %(len(refs),len(temp_ref)))    
+    logger.info("After cleaning tars size change from %s to %s" %(len(tars),len(temp_tar)))    
+    tars = []
+    refs = temp_ref
+    for t in temp_tar:
+        if ((t["status"] == "downloaded") or (t["status"] == "failed download")):
+            if (t["run_count"] > 0):
+                logger.info("Tar %s is good and added to tars list." %t["ROOT_file_name_part"])
+                tars.append(t)
+        else:
+            if ((t["status"] == "NoDQMIO") or (t["status"] =="failed_rqmgr")):
+                logger.info("NoROOT or NoDQMIO or failed_rqmgr")
+                continue
+            if(category_name == "Data"):
+                for r in temp_ref:
                     rn = r["ROOT_file_name_part"]
                     tn = t["ROOT_file_name_part"]
                     if ((rn.split("__")[0] == tn.split("__")[0])
                         and (rn.split("__")[1].split("-")[1] == tn.split("__")[1].split("-")[1])):
-                        temp_tar[:] = [d for d in temp_tar if d.get('ROOT_file_name_part') != tn]
-    tars = []
-    refs = temp_ref    
-    for t in temp_tar:
-        if ((t["status"] == "downloaded") or (t["status"] == "failed download")):
-            if (t["run_count"] > 0):
-                tars.append(t)
-        else:
-            if ((t["status"] == "NoDQMIO") or (t["status"] =="failed_rqmgr")):
-                continue
-            logger.info("NoROOT or NoDQMIO or failed_rqmgr")
-            for r in temp_ref:
-                rn = r["ROOT_file_name_part"]
-                tn = t["ROOT_file_name_part"]
-                if ((rn.split("__")[0] == tn.split("__")[0])
-                    and (rn.split("__")[1].split("-")[1] == tn.split("__")[1].split("-")[1])):
-                    refs[:] = [d for d in refs if d.get('ROOT_file_name_part') != rn] 
+                        refs[:] = [d for d in refs if d.get('ROOT_file_name_part') != rn]
+            else:
+                tmps = []
+                for t in tars:
+                    rn = r["ROOT_file_name_part"]
+                    tn = t["ROOT_file_name_part"]    
+                    if (rn.split("__")[0] == tn.split("__")[0]):
+                        tmps.append(t)
+                if(len(tmps)>1):
+                    length = 100
+                    ref_to_rm = "DontRemoveAnything"
+                    for p in tmps:
+                        logger.info("%s" %ref["ROOT_file_name_part"])
+                        logger.info("%s" %p["ROOT_file_name_part"])
+                        lref = ref["ROOT_file_name_part"].split("__")[1].split("-")[1]
+                        ltar = p["ROOT_file_name_part"].split("__")[1].split("-")[1]
+                        logger.info("%s \n%s \nlength: %s\n**************" %(lref, ltar, levenshtein(lref, ltar)))
+                        if(levenshtein(lref, ltar) < length):
+                            length = levenshtein(ltar, lref)
+                            ref_to_rm = p["ROOT_file_name_part"]
+                        elif (length == levenshtein(lref, ltar)):
+                            logger.info("DANGER!!")
+                            logger.info("Sorry, but we have found more than 1, so it will crash later :(. We take only first")
+                            logger.info("DANGER!!")
+                    refs[:] = [d for d in refs if d.get('ROOT_file_name_part') != ref_to_rm]
+                elif(len(tmps)==1):
+                    logger.info("tmps root name: %s" %tmps[0]["ROOT_file_name_part"])
+                    ref_to_rm = tmps[0]["ROOT_file_name_part"]
+                    refs[:] = [d for d in refs if d.get('ROOT_file_name_part') != ref_to_rm]
+    logger.info("In the end: Tar list: %s\n" %tars)   
+    logger.info("In the end: Ref list: %s\n" %refs)   
     return refs, tars
 
 
@@ -297,36 +359,37 @@ def get_list_of_wf(refs, tars, category):
     samples = {}
     logger.info("size of REF: %s" %len(refs))
     logger.info("size of Tar: %s" %len(tars))
-    cleaned_lists = deleteCrashedFiles(refs, tars)
+    cleaned_lists = deleteCrashedFiles(refs, tars, category["name"])
     refs = cleaned_lists[0]
     tars = cleaned_lists[1]
     logger.info("Cleaned lists sizes:")
     logger.info("ref size: %s" %len(refs))
     logger.info("tar size: %s" %len(tars))
-    if (len(tars) > len(refs)):
+    if (len(tars) < len(refs)):
         logger.info("sukeiciam listus vietomis")
         temp = refs
         refs = tars
-        tars = refs
+        tars = temp
         changed = True
 
     for ref in refs:
-        if ((ref["status"] == "NoDQMIO") or (ref["status"] == "NoROOT")):
-            logger.info("NoROOT or NoDQMIO") 
         pRef = []
         pTar = []
+        if ((ref["status"] == "NoDQMIO") or (ref["status"] == "NoROOT")):
+            logger.info("NoROOT or NoDQMIO") 
         for tar in tars:
             if ((tar["status"] == "NoDQMIO") or (tar["status"] == "NoROOT")):
                 logger.info("pyst ir continue   ")
                 continue
             lref = ref["ROOT_file_name_part"]
             ltar = tar["ROOT_file_name_part"]
-            if(ref["ROOT_file_name_part"].split("__")[0] == tar["ROOT_file_name_part"].split("__")[0]):
+            if(lref.split("__")[0] == ltar.split("__")[0]):
                 lref = ref["ROOT_file_name_part"].split("-")[1].split("_")[-1]
                 ltar = tar["ROOT_file_name_part"].split("-")[1].split("_")[-1]
                 if((category["name"] == "Data") and (lref != ltar)):
                     continue
                 pTar.append(tar)
+                logger.info("pTar size: %s" %len(pTar))
             if (len(pTar) > 1):
                 logger.info("WARNING")
                 logger.info("RADO %s, I guess we need lengvish" %len(pTar))
@@ -389,7 +452,7 @@ def get_list_of_wf(refs, tars, category):
 
 def validate(category_name, HLT):
   #  global logFile
-    logger.info("atejoo i validate")
+    logger.info("came to valide")
     local_subreport = get_local_subreport_path(category_name, HLT)
     # TODO: handle dirs creation failures
     if (not os.path.exists(local_subreport)):
@@ -399,15 +462,13 @@ def validate(category_name, HLT):
     logger.info("local_subreport::; %s" %os.path.abspath(local_subreport))
     tar_list = category["lists"]["target"]
     ref_list = category["lists"]["reference"]
-    logger.info("final refssss pries: %s" %ref_list)
     returned_lists = get_list_of_wf(ref_list, tar_list, category)
     cat_path = category_name+"/"
 
-    logger.info("returned list::::\n%s" + str(returned_lists))
     ref_list = [cat_path + s for s in returned_lists[0]]
     tar_list = [cat_path + s for s in returned_lists[1]]
-    logger.info("final refssss: %s" %ref_list)
-    logger.info("final tarssss: %s" %tar_list)
+    logger.info("final refs: %s" %ref_list)
+    logger.info("final tars: %s" %tar_list)
 
     rs = (",").join(ref_list)
     ts = (",").join(tar_list)
@@ -444,12 +505,14 @@ def compress(category_name, HLT):
 
 
 def move_to_afs(category_name, HLT):
-    logger.info("atejo 5 move_to_afs")
+    logger.info("Moving to afs")
     local_subreport = get_local_subreport_path(category_name, HLT)
+    logger.info("local_subreport: %s" %local_subreport)
     remote_subreport = os.path.join(remote_reports,
                                     os.path.basename(local_subreport))
-    # TODO: handle failures
+    logger.info("remote_subreport: %s" %remote_subreport)
     if (os.path.exists(remote_subreport)):
+        logger.info("This: %s subreport already exist. Old files will be deleted." %remote_subreport)
         shutil.rmtree(remote_subreport)
     shutil.copytree(local_subreport, remote_subreport)
 

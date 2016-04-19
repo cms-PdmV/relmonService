@@ -22,6 +22,29 @@ var relmon_request_service_frontend = angular.module(
 //   });
 
 
+
+
+
+
+    // console.log("hash");
+    // console.log("vieta:");
+    // console.log(window.location.href);
+    // console.log("host url");
+    // console.log("davem id_")
+    // console.log($location.hash(request_id))
+    // $location.hash(request_id);
+    // $location.hash(old);
+    // $anchorScroll()
+    // console.log("anchorScroll")
+    // // $anchorScroll()
+    // console.log(window.location.href.toString().split("#")[1])
+    // console.log((window.location.href.toString().split("#")[1]).substr(1))
+    // var a = (window.location.href.toString().split("#")[1]).substr(1)
+    // console.log("a" + a)
+    // var c = window.location.href.toString().split("#")[0]
+    // console.log("c" + c)    
+  //   alert('hello!');
+  // }, false);
 relmon_request_service_frontend.controller(
     "Request_controller", 
     ["$http", "$modal", "$location", "$anchorScroll", "$scope", "$routeParams", "$document", Request_controller
@@ -55,6 +78,7 @@ function Request_controller($http, $modal, $location, $anchorScroll, $scope, $ro
     var report_categories = [
         "Data", "FullSim", "FastSim", "Generator",
         "FullSim_PU", "FastSim_PU"];
+
 
 // private functions
 
@@ -97,11 +121,6 @@ function Request_controller($http, $modal, $location, $anchorScroll, $scope, $ro
         me.new_request_name = "";
         me.new_request_threshold = 100;
     }
-
-
-    /*
-     * 
-     */
 
     function prepare_new_request_post_data() {
         var all_sample_lists_empty = true;
@@ -254,7 +273,13 @@ function Request_controller($http, $modal, $location, $anchorScroll, $scope, $ro
         try {
             post_data = prepare_new_request_post_data();
             // TODO: format post_data text
-            var modal_inst = this.open_confirm_modal(post_data);
+            message = "It's up to you, how does it works."
+            for (req in me.relmon_requests) {
+                if(post_data["name"] == me.relmon_requests[req]["name"]){
+                    message = "ATENTION!!! This name already exist. Those categories which already exist will be replaced into news."
+                }   
+            }
+            var modal_inst = this.open_confirm_modal(message);
             modal_inst.result.then(
                 function() {
                     return submit_request(post_data, id);});
@@ -302,7 +327,6 @@ function Request_controller($http, $modal, $location, $anchorScroll, $scope, $ro
         );
     }
 
-
     this.scrollTo = function(request_id) {
         console.log('console:: %s')
         var id = "/" + request_id
@@ -313,8 +337,8 @@ function Request_controller($http, $modal, $location, $anchorScroll, $scope, $ro
         console.log("davem id_")
         console.log($location.hash(request_id))
         $anchorScroll()
-        console.log("anchorScroll")
-        $location.hash(old);
+        console.log("anchorScroll", old)
+        $location.hash('123412');
         return false
         // $location.hash(request_id);
     }
@@ -397,27 +421,10 @@ function Request_controller($http, $modal, $location, $anchorScroll, $scope, $ro
     reset_sample_inputs();
     this.get_user_info()
     this.get_requests();
-    if (window.location.href.toString().split("/")[4] == "#"){
-        console.log("hash");
-        console.log($location.hash());
-        console.log("vieta:");
-        console.log(window.location.href);
-        console.log("host url");
-        console.log(window.location.href.toString().split("#")[1])
-        console.log((window.location.href.toString().split("#")[1]).substr(1))
-        var a = (window.location.href.toString().split("#")[1]).substr(1)
-        console.log("a" + a)
-        var c = window.location.href.toString().split("#")[0]
-        console.log("c" + c)
-        var b = [window.location.href.toString().split("#")[0], (window.location.href.toString().split("#")[1]).substr(1)]
-        b = b.join("#")
-        console.log("b" + b)
 
-        console.log("kazkas vyksta")
-        this.scrollTo(window.location.href.toString().split("/").pop())
-    }
-    // this.scrollTo(window.location.href.toString().split("/").pop())
 }
+
+
 
 // modal controllers
 
