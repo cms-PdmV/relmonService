@@ -339,6 +339,7 @@ def get_run_count(DQMIO_string):
         return None
     try:
         rjson = json.loads(data)
+        logger.info("rjson:: %s" %rjson)
         return (len(rjson[0]["run_num"]))
     except (ValueError, LookupError):
         logger.exception("get_workload_manager_status returning with error")
