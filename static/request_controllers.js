@@ -6,54 +6,14 @@ var relmon_request_service_frontend = angular.module(
     "relmon_request_service_frontend",
     ["ui.bootstrap", "ngRoute"]
 )
-// relmon_request_service_frontend.config(
-//     function($locationProvider) {
-//         // $locationProvider.html5Mode(true).hashPrefix('!');
-// });
-// relmon_request_service_frontend.config( 
-//   function($routeProvider) {
-//     console.log($location)
-//     $routeProvider
-//       .when("/relmonsvc/", {
-//         templateUrl: "index.htm",
-//         controller: "Request_controller"
-//       })
-//       .otherwise({redirectTo:"/relmonsvc"});
-//   });
 
 
-
-
-
-
-    // console.log("hash");
-    // console.log("vieta:");
-    // console.log(window.location.href);
-    // console.log("host url");
-    // console.log("davem id_")
-    // console.log($location.hash(request_id))
-    // $location.hash(request_id);
-    // $location.hash(old);
-    // $anchorScroll()
-    // console.log("anchorScroll")
-    // // $anchorScroll()
-    // console.log(window.location.href.toString().split("#")[1])
-    // console.log((window.location.href.toString().split("#")[1]).substr(1))
-    // var a = (window.location.href.toString().split("#")[1]).substr(1)
-    // console.log("a" + a)
-    // var c = window.location.href.toString().split("#")[0]
-    // console.log("c" + c)    
-  //   alert('hello!');
-  // }, false);
 relmon_request_service_frontend.controller(
     "Request_controller", 
     ["$http", "$modal", "$location", "$anchorScroll", "$scope", "$routeParams", "$document", Request_controller
     ]);
 
-// relmon_request_service_frontend.controller(
-//     "Request_controller",
-//     ["$http", "$modal", "$location", "$anchorScroll", "$scope", Request_controller]
-// );
+
 
 function Request_controller_exception(message) {
     this.message = message;
@@ -78,25 +38,6 @@ function Request_controller($http, $modal, $location, $anchorScroll, $scope, $ro
     var report_categories = [
         "Data", "FullSim", "FastSim", "Generator",
         "FullSim_PU", "FastSim_PU"];
-
-
-// private functions
-
-    /*(function() {
-  var myApp = angular.module('myApp', ['ngRoute']);
-  
-  myApp.config( 
-  function($routeProvider) {
-    $routeProvider
-      .when("/main", {
-        templateUrl: "main.html",
-        controller: "MainController"
-      })
-      .otherwise({redirectTo:"/main"});
-  });
-}());
-     * 
-     */
 
 
     function reset_sample_inputs() {
@@ -273,7 +214,7 @@ function Request_controller($http, $modal, $location, $anchorScroll, $scope, $ro
         try {
             post_data = prepare_new_request_post_data();
             // TODO: format post_data text
-            message = "It's up to you, how does it works."
+            message = "Your request is going to be submitted"
             for (req in me.relmon_requests) {
                 if(post_data["name"] == me.relmon_requests[req]["name"]){
                     message = "ATENTION!!! This name already exist. Those categories which already exist will be replaced into news."
