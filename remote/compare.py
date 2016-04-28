@@ -226,7 +226,7 @@ def get_downloaded_files_list(givenList, wf_list):
 
 # In this method we go through the refs and tars lists and if any on wf has wrong status(not downloaded) 
 # We check another lists and try to delete bad wfs.
-def deleteCrashedFiles(refs, tars):
+def deleteCrashedFiles(refs, tars, category_names):
     logger.info("Method to delete files with wrong status")
     logger.info("pTar lenght: %s" %len(refs))
     logger.info("pRef lenght: %s" %len(tars))
@@ -234,7 +234,7 @@ def deleteCrashedFiles(refs, tars):
     temp_tar = tars
     for r in refs:
         logger.info("status %s" %r["status"])
-
+        tmps = []
         if ((r["status"] == "downloaded") or (r["status"] == "failed download")):
             if (r["run_count"] > 0):
                 logger.info("Ref: %s good. Add to list." %r["ROOT_file_name_part"])

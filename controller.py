@@ -81,7 +81,7 @@ class Controller(threading.Thread):
                             comparing = True
                         if (comparing):
                             self._make_report()
-                            self.request.status = "Qued_to_compare_"
+                            self.request.status = "comparing"
                             shared.update(self.request.id_)
                 time.sleep(30)
         except Exception as ex:
