@@ -52,7 +52,7 @@ logger.info("Flask resources atached")
 
 try:
     utils.init_validation_logs_dir()
-    # utils.prepare_remote()
+    utils.prepare_remote()
     utils.init_authentication_ticket_renewal()
     controllers.init_controllers()
     logger.info("Controllers initialized")
@@ -64,6 +64,6 @@ except:
 if __name__ == '__main__':
     print("Service is about to start.")
     print("You may wish to check log files sometimes.")
-    app.run(debug=True, use_reloader=False, host='0.0.0.0', port=8080,
+    app.run(threaded=True, debug=True, use_reloader=False, host='0.0.0.0', port=8080,
             ssl_context=(CONFIG.HOST_CERT_PATH,
                          CONFIG.HOST_KEY_PATH))

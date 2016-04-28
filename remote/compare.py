@@ -166,26 +166,17 @@ def levenshtein(source, target):
 
 
 def get_downloaded_files_list(givenList, wf_list):
-    logger.info("*******************************")
     logger.info("get_downloaded_files_list")
     logger.info("list length: %s" %len(givenList))
-    logger.info("*******************************")
     final_list = []
-    #if (len(givenList) > 1):
     for el in givenList:
-        logger.info("print ef and get everything. \n%s" %el)
         pVar = []
         for wf in wf_list:
             wf_name = (("-").join(("__").join(wf.split("__")[1:3]).split("-")[:-1])) + "-"
-            #logger.info("wf_name: %s" %wf_name)
             if (wf_name == el["ROOT_file_name_part"]):
-            #if (wf_name == el[]):
                 pVar.append(wf)
-            #logger.info("wf with same name numb.: %s" %len(pVar))
-        # if (el["root_count"] > 1 and el["run_count"] > 1 and len(pVar) > 1):
-            #Filter different RUN_Numbers
         
-        logger.info("el: %s viso rado: %s" %(el["ROOT_file_name_part"], len(pVar)))
+        logger.info("element: %s found with elements with the same part: %s" %(el["ROOT_file_name_part"], len(pVar)))
         unique_list = []
         for p in pVar:
             unique_list.append(p.split("__")[0].split("_")[-1])
@@ -203,7 +194,6 @@ def get_downloaded_files_list(givenList, wf_list):
                 max_ver = 0
                 for tmp in temp:
                     logger.info("max version: %s" %max_ver)
-                    logger.info("To check max Version: \n%s" %tmp)
                     if (int((tmp.split("__")[2].split("-")[-1])[1:]) > max_ver):
                         max_ver = int((tmp.split("__")[2].split("-")[-1])[1:])
                         tmp2 = []
@@ -228,17 +218,15 @@ def get_downloaded_files_list(givenList, wf_list):
             logger.info("temp in the end lenght: %s" %len(temp))
             if(len(temp) > 1):
                 logger.info("!!!!!!!!WARNING!!!!!!!!")
-                logger.info("!!!!!!!!WARNING!!!!!!!!")
                 logger.info("Something went wrong, there are more than one donwloaded file in the end")
-                logger.info("!!!!!!!!WARNING!!!!!!!!")
                 logger.info("!!!!!!!!WARNING!!!!!!!!")
             else: 
                 final_list.append(temp[0])
     return final_list
-
+# In this method we go through the refs and tars lists and if any on wf has wrong status(not downloaded) 
+# We check another lists and try to delete bad wfs.
 def deleteCrashedFiles(refs, tars):
-    logger.info("***********************************************")
-    logger.info("deleteCrashedFiles")
+    logger.info("Method to delete files with wrong status")
     logger.info("pTar lenght: %s" %len(refs))
     logger.info("pRef lenght: %s" %len(tars))
     temp_ref = []
@@ -280,10 +268,11 @@ def deleteCrashedFiles(refs, tars):
 
 
     
-
+# Here we trying to get all root files from category, deeper we do a lot of others things,
+# I'll tell you later what. Ok after cleaning wfs' lists we trying to match wfs from both of lists. 
+# And after that we trying to check downloaded files. because there could be more then  1 version.
 def get_list_of_wf(refs, tars, category):
-    logger.info("***********************************************")
-    logger.info("get_list_of_wf")
+    logger.info("Trying to get list of workflows Method")
     ref2 = []
     tar2 = []
     changed = False
@@ -303,7 +292,6 @@ def get_list_of_wf(refs, tars, category):
     logger.info("ref size: %s" %len(refs))
     logger.info("tar size: %s" %len(tars))
     if (len(tars) > len(refs)):
-        logger.info("sukeiciam listus vietomis")
         temp = refs
         refs = tars
         tars = refs
@@ -316,7 +304,6 @@ def get_list_of_wf(refs, tars, category):
         pTar = []
         for tar in tars:
             if ((tar["status"] == "NoDQMIO") or (tar["status"] == "NoROOT")):
-                logger.info("pyst ir continue   ")
                 continue
             lref = ref["ROOT_file_name_part"]
             ltar = tar["ROOT_file_name_part"]
@@ -327,16 +314,11 @@ def get_list_of_wf(refs, tars, category):
                     continue
                 pTar.append(tar)
             if (len(pTar) > 1):
-                logger.info("WARNING")
-                logger.info("RADO %s, I guess we need lengvish" %len(pTar))
-                logger.info("WARNING")
                 length = 20
                 tar3 = []
                 for p in pTar:
-                    logger.info("---------------------------")
                     logger.info("%s" %ref["ROOT_file_name_part"])
                     logger.info("%s" %p["ROOT_file_name_part"])
-                    logger.info("---------------------------")
                     lref = ref["ROOT_file_name_part"].split("__")[1].split("-")[1]
                     ltar = p["ROOT_file_name_part"].split("__")[1].split("-")[1]
                     logger.info("%s \n%s \nlength: %s\n**************" %(lref, ltar, levenshtein(lref, ltar)))
@@ -347,21 +329,14 @@ def get_list_of_wf(refs, tars, category):
                     elif (length == levenshtein(lref, ltar)):
                         tar3.append(p)
                 pTar = tar3
-                logger.info("pTar length: %s" %len(pTar))
+                logger.info("Now list length is: %s" %len(pTar))
         if (len(pTar) > 1):
-            logger.info("WARNING")
-            logger.info("WARNING")
-            logger.info("I DO NOT KNOW WHAT TO DO :(((( ")
-            logger.info("WANING")
-            logger.info("WANING")
-            logger.info("WANING")
-            logger.info("pTar has more than one element ://")
+            logger.info("In this case you should call for Goku San: +37063432405")
+            logger.info("We found more than 1, it means that we don't compare those wfs: \n%s " %pTar)
         elif(len(pTar) < 1):
-            logger.info("pTar has less than one element ://")
+            logger.info("We found more than 1, it means that we don't compare those wfs: \n%s " %pTar)
         elif(len(pTar) == 1):
-            logger.info("pTar has one element://")
-            logger.info("ref: %s" %ref["ROOT_file_name_part"])
-            logger.info("tar: %s" %pTar[0]["ROOT_file_name_part"])
+            logger.info("We matched these files:\n%s\n%s" %(ref["ROOT_file_name_part"],pTar[0]["ROOT_file_name_part"]))
             ref2.append(ref)
             tar2.append(pTar[0])
 
@@ -369,16 +344,15 @@ def get_list_of_wf(refs, tars, category):
     logger.info("pRef lenght: %s" %len(tar2))
 
     if (ref2 > 0 and tar2 > 0 and len(tar2)==len(ref2)):
-        logger.info("REFFFFF")
         ref2 = get_downloaded_files_list(ref2, wf_list)
-        logger.info("TARRRRR")
         tar2 = get_downloaded_files_list(tar2, wf_list)
-        logger.info("print REF:")
-        for x in ref2:
-            logger.info("%s\n" %x)
-        logger.info("print TAR:")
-        for x in tar2:
-            logger.info("%s\n" %x)
+        # If you want to print lists of REF and TAR you can uncomment this part :)
+        # logger.info("print REF:")
+        # for x in ref2:
+        #     logger.info("%s\n" %x)
+        # logger.info("print TAR:")
+        # for x in tar2:
+        #     logger.info("%s\n" %x)
     if (changed):
         logger.info("change back lists")
         return tar2, ref2
@@ -387,26 +361,18 @@ def get_list_of_wf(refs, tars, category):
        
 
 def validate(category_name, HLT):
-  #  global logFile
-    logger.info("atejoo i validate")
     local_subreport = get_local_subreport_path(category_name, HLT)
     # TODO: handle dirs creation failures
     if (not os.path.exists(local_subreport)):
         os.makedirs(local_subreport)
         os.chmod(local_subreport, 0775)
-    logger.info("abspath %s" %os.path.abspath(category_name))
-    logger.info("local_subreport::; %s" %os.path.abspath(local_subreport))
     tar_list = category["lists"]["target"]
     ref_list = category["lists"]["reference"]
-    logger.info("final refssss pries: %s" %ref_list)
     returned_lists = get_list_of_wf(ref_list, tar_list, category)
     cat_path = category_name+"/"
 
-    logger.info("returned list::::\n%s" + str(returned_lists))
     ref_list = [cat_path + s for s in returned_lists[0]]
     tar_list = [cat_path + s for s in returned_lists[1]]
-    logger.info("final refssss: %s" %ref_list)
-    logger.info("final tarssss: %s" %tar_list)
 
     rs = (",").join(ref_list)
     ts = (",").join(tar_list)
@@ -419,7 +385,6 @@ def validate(category_name, HLT):
                       "-N 6",
                       "--hash_name"]
 
-    logger.info("working dir: %s" %os.getcwd())
     logger.info("print validation_cmd: %s" %validation_cmd)
 
     if (HLT):
@@ -443,7 +408,6 @@ def compress(category_name, HLT):
 
 
 def move_to_afs(category_name, HLT):
-    logger.info("atejo 5 move_to_afs")
     local_subreport = get_local_subreport_path(category_name, HLT)
     remote_subreport = os.path.join(remote_reports,
                                     os.path.basename(local_subreport))
