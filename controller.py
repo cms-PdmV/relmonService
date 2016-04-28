@@ -13,9 +13,11 @@ import time
 import threading
 import json
 import os
+import random
 
 from config import CONFIG
 from common import relmon, shared
+from threading import Lock
 
 logger = logging.getLogger(__name__)
 logger.addHandler(NullHandler())
@@ -39,65 +41,59 @@ def uncaught_exception_to_log_decorator(func):
 
 
 class Controller(threading.Thread):
-    """Documentation for Controller
 
-    """
-    def __init__(self, request):
-        super(Controller, self).__init__()
-        self.request = request
+    def __init__(self):
+        threading.Thread.__init__(self)
         self.worker = None
+        self.daemon = True
         self._stop = False
         self._terminate = False
+        self.start()
 
     @uncaught_exception_to_log_decorator
     def run(self):
-        logger.info("Running Controller for RR " + str(self.request.id_))
-        waiting = False
         try:
-            self.request.get_access()
-            if (self.request.status in ["initial", "waiting"]):
-                logger.info("RR is new or waiting")
-                self.request.status = "waiting"
-                waiting = True
-        finally:
-            self.request.release_access()
-        if (waiting):
-            if (not self._update_statuses()):
-                return
-        # do downloads
-        downloading = False
-        try:
-            self.request.get_access()
-            if (self.request.status in ["waiting", "downloading"]):
-                self.request.status = "downloading"
-                logger.info("RR is/changed to  downloading")
-                downloading = True
-        finally:
-            self.request.release_access()
-        if (downloading):
-            if(not self._do_downloads()):
-                return
-        # make report
-        comparing = False
-        
-        try:
-            self.request.get_access()
-            if (self.request.status in ["downloading", "comparing"]):
-                logger.info("RR is/changed to  comparing")
-                self.request.status = "comparing"
-                comparing = True
-        finally:
-            self.request.release_access()
-        if (comparing):
-            if (not self._make_report()):
-                return
+            while True:
+                logger.info('Running main Controller')
+                if (len(shared.relmons) > 0):
+                    for key, value in shared.relmons.items():
+                        self.request = shared.relmons[key]
+                        waiting = False
+                        if (self.request.status in ["initial", "waiting"]):
+                            logger.info("RR %s is new or waiting" %self.request.id_)
+                            self.request.status = "waiting"
+                            waiting = True
+                        if (waiting):
+                            if (not self._update_statuses()):
+                                logger.debug("Shit just got real!")
+                        downloading = False
+                        logger.debug("downloading:%s" % (downloading))
+                        if (self.request.status in ["waiting", "downloading"]):
+                            self.request.status = "downloading"
+                            logger.info("RR is/changed to  downloading")
+                            downloading = True
+                        if (downloading):
+                            self._do_downloads()
+                        comparing = False
+                        if (self.request.status in ["downloaded", "Qued_to_compare"]):
+                            self.request.status = "Qued_to_compare"
+                            logger.info("RR is/changed to  Qued_to_compare")
+                            comparing = True
+                        if (comparing):
+                            self._make_report()
+                            self.request.status = "Qued_to_compare_"
+                            shared.update(self.request.id_)
+                time.sleep(30)
+        except Exception as ex:
+            logger.info("something went wrong. Crashed on Controler.run: %s" % (str(ex)))
 
-        logger.info("Finished Controller for RR " + str(self.request.id_))
 
     def _update_statuses(self):
-        while(True):
-            self._start_worker(WORKER_UPDATER)
-            self.worker.join()
+        while (True):
+            logger.info("Request id: %s" %self.request.id_)
+            relmon.StatusUpdater(self.request)
+            logger.info("finished first update")
+
             if (self._stop):
                 if (self._terminate):
                     self._clean()
@@ -105,7 +101,7 @@ class Controller(threading.Thread):
             shared.update(self.request.id_)
             #Commented, for a while. Because we don't want to make statuses Failed.
             if (self.request.status in CONFIG.FINAL_RELMON_STATUSES):
-                 return False
+                return False
             if (self.request.is_download_ready()):
                 logger.info("RR download ready")
                 return True
@@ -118,8 +114,7 @@ class Controller(threading.Thread):
         logger.info("RR not 100% root. Sleeping.")
         time.sleep(CONFIG.TIME_AFTER_THRESHOLD_REACHED)
         logger.info("Waking up")
-        self._start_worker(WORKER_UPDATER)
-        self.worker.join()
+        relmon.StatusUpdater(self.request)
         if (self._stop):
             if (self._terminate):
                 self._clean()
@@ -127,48 +122,37 @@ class Controller(threading.Thread):
         shared.update(self.request.id_)
 
     def _do_downloads(self):
-        while(True):
-            self._start_worker(WORKER_DOWNLOADER)
-            self.worker.join()
-            if (self._stop):
-                if (self._terminate):
-                    self._clean()
-                return False
-            shared.update(self.request.id_)
-            if (self.worker.ret_code != 0):
-                logger.error("Downloader on remote machine failed")
-                self.request.get_access()
-                try:
-                    self.request.status = "failed"
-                finally:
-                    self.request.release_access()
-                    return False
-            if (self.request.status in CONFIG.FINAL_RELMON_STATUSES):  # ??
-                return False                                           # ??
-            if (self.request.has_ROOT()):
-                logger.info("RR has 'ROOT' workflows. Sleeping")
-                time.sleep(CONFIG.TIME_BETWEEN_DOWNLOADS)
-                logger.info("Waking up")
-            else:
-                return True
+
+        if (relmon.lock_thread(self.request)):
+            logger.info("afther acquiring thread")
+            command = """\
+                cd %s;
+                ./download_ROOT.py %s
+                > download_ROOT.out 2>&1
+                """ % (CONFIG.REMOTE_WORK_DIR, str(self.request.id_))
+            task = relmon.BeastBornToDownload(command, self.request)
+
+
+            logger.info("Added:%s to queue DOWNLOAD" % (self.request.id_))
+            logger.info("task: %s" %task.run)
+            relmon.downloads_queue.add_task(task.run)
+        else:
+            logger.info("Error in qcquiring lock")
 
     def _make_report(self):
-        self._start_worker(WORKER_REPORTER)
-        self.worker.join()
-        if (self._stop):
-            if (self._terminate):
-                self._clean()
-            return False
-        shared.update(self.request.id_)
-        if (self.worker.ret_code != 0):
-            logger.error("Report generating on remote machine failed")
-            self.request.get_access()
-            try:
-                self.request.status = "failed"
-            finally:
-                self.request.release_access()
-                return False
-        return True
+        logger.info("came to _make_report")
+        if (relmon.lock_thread(self.request)):
+            command ="""\
+                cd %s;
+                eval `scramv1 runtime -sh`
+                cd %s;
+                ./compare.py %s > compare.out 2>&1
+                """ % (CONFIG.REMOTE_CMSSW_DIR, CONFIG.REMOTE_WORK_DIR, self.request.id_)
+            task = relmon.BeastBornToCompare(command, self.request)
+            relmon.reports_queue.add_task(task.run)
+            logger.info("Added:%s to queue COMPARE" % (self.request.id_))
+        else:
+            logger.debug("Error in acquiring lock")
 
     def stop(self):
         self._stop = True
@@ -182,7 +166,6 @@ class Controller(threading.Thread):
         self.stop()
         if (not self.is_alive()):
             self._start_worker(WORKER_CLEANER)
-
     def _clean(self):
         logger.info("clean for RR " + str(self.request.id_))
         self._start_worker(WORKER_CLEANER)
@@ -194,17 +177,3 @@ class Controller(threading.Thread):
                 self.request.status = "failed"
             finally:
                 self.request.release_access()
-
-    def _start_worker(self, worker_enum):
-        logger.info("Starting worker " + str(worker_enum))
-        if (self.worker is not None and self.worker.is_alive()):
-            raise RuntimeError("Other worker is still alive")
-        elif (worker_enum == WORKER_UPDATER):
-            self.worker = relmon.StatusUpdater(self.request)
-        elif (worker_enum == WORKER_DOWNLOADER):
-            self.worker = relmon.Downloader(self.request)
-        elif (worker_enum == WORKER_REPORTER):
-            self.worker = relmon.Reporter(self.request)
-        elif (worker_enum == WORKER_CLEANER):
-            self.worker = relmon.Cleaner(self.request)
-        self.worker.start()

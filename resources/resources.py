@@ -169,11 +169,11 @@ class Edit(Resource):
         data['id_'] = request_id
         relmon_request = relmon.RelmonRequest(**(data));
         logger.debug(relmon_request.to_dict());
-        controllers.controllers[request_id].stop()
+        # controllers.controllers[request_id].stop()
         shared.updateEntireRequest(request_id, relmon_request)
-        controllers.controllers[relmon_request.id_] = (
-            controller.Controller(relmon_request))
-        controllers.controllers[relmon_request.id_].start()
+        # controllers.controllers[relmon_request.id_] = (
+        #     #controller.Controller(relmon_request))
+        # controllers.controllers[relmon_request.id_].start()
         return "OK", 200    
 
 
@@ -194,9 +194,9 @@ class Requests(Resource):
         logger.debug("request data: " + json.dumps(request.json))
         relmon_request = relmon.RelmonRequest(**(request.json))
         shared.new(relmon_request)
-        controllers.controllers[relmon_request.id_] = (
-            controller.Controller(relmon_request))
-        controllers.controllers[relmon_request.id_].start()
+        # controllers.controllers[relmon_request.id_] = (
+        #     controller.Controller(relmon_request))
+        # controllers.controllers[relmon_request.id_].start()
         return "OK", 200
      
 

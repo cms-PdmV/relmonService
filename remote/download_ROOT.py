@@ -79,7 +79,6 @@ for category in request.categories:
             existing_sample["name"],
             category["name"])
         for sample in sample_list:
-            logger.debug("***************************************************************")
             logger.debug("sample::: %s " %sample["name"])
             if (sample["status"] != "ROOT"):
                 continue

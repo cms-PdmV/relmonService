@@ -18,9 +18,5 @@ controllers = {}
 
 
 def init_controllers():
-    logger.info("Initializing controllers")
-    for relmon_request in shared.relmons.itervalues():
-        logger.debug("Init controller" + str(relmon_request.id_))
-        controllers[relmon_request.id_] = controller.Controller(relmon_request)
-        controllers[relmon_request.id_].start()
-        logger.debug("Controller " + str(relmon_request.id_) + " started")
+    logger.info("Initializing controller")
+    controller.Controller()
