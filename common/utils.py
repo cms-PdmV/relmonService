@@ -315,13 +315,18 @@ def get_DQMIO_status(sample_name):
     tuple is the name of that DQMIO dataset
     """
     status, data = httpsget(host=CONFIG.CMSWEB_HOST,
-                            url=CONFIG.DATATIER_CHECK_URL + '/' + sample_name)
+                            url=CONFIG.DATATIER_CHECK_URL + '?name=' + sample_name,
+                            headers={'Accept': 'application/json'})
+
     if (status == httplib.OK):
-        if ("DQMIO" in data):
-            rjson = json.loads(data.replace('\'', '\"'))
-            DQMIO_string = [i for i in rjson if "DQMIO" in i][0]
-            if ("None" in DQMIO_string):
-                return ("waiting", None)
+        data = json.loads(data)
+        ##in case wf is not yet registered in reqmgr2
+        if len(data["result"]) == 0:
+            return ("waiting", None)
+        output_dses = data["result"][0][sample_name]["OutputDatasets"]
+        dqmio_list = [el for el in output_dses if "DQMIO" in el]
+        if len(dqmio_list) > 0:
+            DQMIO_string = dqmio_list[0]
             return ("DQMIO", DQMIO_string)
         return ("NoDQMIO", None)
     logger.warning("get_DQMIO_status failing with HTTP request")
