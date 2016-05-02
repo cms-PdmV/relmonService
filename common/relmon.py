@@ -162,7 +162,7 @@ class Worker(Thread):
 
     """
     def __init__(self):
-        super(Worker, self).__init__()    
+        super(Worker, self).__init__()
     def stop(self):
         raise NotImplementedError("Workers should implement 'stop' method.")
 
@@ -197,7 +197,8 @@ class BeastBornToCompare():
                              CONFIG.REMOTE_HOST + ':' + CONFIG.REMOTE_WORK_DIR)
             else:
                 self.request.status = "finished"
-                logger.info("RR is/changed to  finished")
+                common.shared.update(self.request.id_)
+                logger.info("RR:%s is/changed to  finished" % (self.request.id_))
             self.ssh_client.close()
 
         except:
@@ -345,8 +346,10 @@ class StatusUpdater():
             if (self._stop):
                 return
             for sample_index in range(len(sample_list)):
+                logger.debug("Getting file urls for: %s in category: %s" % (
+                    sample_list[sample_index]["name"], category["name"]))
                 file_urls = common.utils.get_ROOT_file_urls(
-                    sample_list[sample_index]["name"],
+                    sample_list[sample_index]["DQMIO_string"],
                     category["name"])
                     # FIXME: temporary solution
                 self.request.get_access()

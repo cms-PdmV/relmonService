@@ -76,7 +76,7 @@ for category in request.categories:
         if (not existing_sample):
             continue
         file_urls = utils.get_ROOT_file_urls(
-            existing_sample["name"],
+            existing_sample["DQMIO_string"],
             category["name"])
         for sample in sample_list:
             logger.debug("sample::: %s " %sample["name"])
@@ -91,7 +91,7 @@ for category in request.categories:
                 if (os.path.isfile(file_url.split("/")[-1])):
                     logger.debug("file already exist: %s" %sample["name"])
                     file_count += 1
-                    
+
                 # TODO: handle failures (httpsget_large_file)
                 else:
                     logger.debug("downloading file: %s" %sample["name"])
@@ -103,7 +103,7 @@ for category in request.categories:
 
             # <- end of file_urls
             # Maybe do something else with the downloaded_count
-              
+
                 if ((file_count >= sample["run_count"] and sample["run_count"] != 0)):
                     sample["status"] = "downloaded"
                     status, data = utils.https(
@@ -124,7 +124,7 @@ for category in request.categories:
                         "/lists/" + lname + "/samples/" + sample["name"],
                         data=json.dumps(sample),
                         headers={"Cookie": cookie})
-                
+
         # <- end of samples
         # NOTE: same dir for ref and target
         # os.chdir("..")
