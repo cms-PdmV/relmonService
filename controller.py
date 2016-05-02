@@ -59,13 +59,17 @@ class Controller(threading.Thread):
                     for key, value in shared.relmons.items():
                         self.request = shared.relmons[key]
                         waiting = False
+                        logger.debug("RR: %s current status:%s" % (self.request.id_,
+                                self.request.status))
+
                         if (self.request.status in ["initial", "waiting"]):
-                            logger.info("RR %s is new or waiting" %self.request.id_)
+                            logger.info("RR %s is new or waiting" % self.request.id_)
                             self.request.status = "waiting"
                             waiting = True
                         if (waiting):
                             if (not self._update_statuses()):
                                 logger.debug("Shit just got real!")
+                        logger.debug("Before downloading=False")
                         downloading = False
                         logger.debug("downloading:%s" % (downloading))
                         if (self.request.status in ["waiting", "downloading"]):
@@ -83,42 +87,42 @@ class Controller(threading.Thread):
                             self._make_report()
                             self.request.status = "comparing"
                             shared.update(self.request.id_)
+                logger.debug("Going to sleep for 30sec")
                 time.sleep(30)
         except Exception as ex:
             logger.info("something went wrong. Crashed on Controler.run: %s" % (str(ex)))
 
-
     def _update_statuses(self):
-        while (True):
-            logger.info("Request id: %s" %self.request.id_)
-            relmon.StatusUpdater(self.request)
-            logger.info("finished first update")
-
-            if (self._stop):
-                if (self._terminate):
-                    self._clean()
-                return False
-            shared.update(self.request.id_)
-            #Commented, for a while. Because we don't want to make statuses Failed.
-            if (self.request.status in CONFIG.FINAL_RELMON_STATUSES):
-                return False
-            if (self.request.is_download_ready()):
-                logger.info("RR download ready")
-                return True
-            else:
-                logger.info("RR download not ready. Sleeping.")
-                time.sleep(CONFIG.TIME_BETWEEN_STATUS_UPDATES)
-                logger.info("Waking up")
-        if (self.request.is_ROOT_100()):
-            return True
-        logger.info("RR not 100% root. Sleeping.")
-        time.sleep(CONFIG.TIME_AFTER_THRESHOLD_REACHED)
-        logger.info("Waking up")
+        logger.info("Request id: %s" % (self.request.id_))
         relmon.StatusUpdater(self.request)
+        logger.info("finished first update")
         if (self._stop):
             if (self._terminate):
                 self._clean()
             return False
+
+        shared.update(self.request.id_)
+        if (self.request.status in CONFIG.FINAL_RELMON_STATUSES):
+            logger.log("Request:%s already in final state" % (self.request.id_))
+            return False
+
+        if (self.request.is_download_ready()):
+            logger.info("Request:%s RR download ready" % (self.request.id_))
+            return True
+        else:
+            logger.info("Request:%s RR download not ready." % (self.request.id_))
+            return False
+
+        if (self.request.is_ROOT_100()):
+            logger.info("Request:%s RR ROOT files at 100%" % (self.request.id_))
+            return True
+
+        ##TO-DO is one terminate enough in here?
+        if (self._stop):
+            if (self._terminate):
+                self._clean()
+            return False
+        ##TO-DO really??
         shared.update(self.request.id_)
 
     def _do_downloads(self):
@@ -166,6 +170,7 @@ class Controller(threading.Thread):
         self.stop()
         if (not self.is_alive()):
             self._start_worker(WORKER_CLEANER)
+
     def _clean(self):
         logger.info("clean for RR " + str(self.request.id_))
         self._start_worker(WORKER_CLEANER)
