@@ -9,7 +9,7 @@ var relmon_request_service_frontend = angular.module(
 
 
 relmon_request_service_frontend.controller(
-    "Request_controller", 
+    "Request_controller",
     ["$http", "$modal", "$location", "$anchorScroll", "$scope", "$routeParams", "$document", Request_controller
     ]);
 
@@ -105,7 +105,7 @@ function Request_controller($http, $modal, $location, $anchorScroll, $scope, $ro
     }
 
     /*
-     * 
+     *
      */
     function http_request_prepare() {
         http_requests_in_progress++;
@@ -142,8 +142,6 @@ function Request_controller($http, $modal, $location, $anchorScroll, $scope, $ro
         reset_sample_inputs();
     }
 
-    // this.addNewChoice = function
-
        // public methods
 
     this.sample_count_by_status = function(samples, status) {
@@ -179,7 +177,7 @@ function Request_controller($http, $modal, $location, $anchorScroll, $scope, $ro
             return "";
         }
     };
-    
+
     this.get_requests = function() {
         http_request_prepare();
         $http.get("requests")
@@ -209,16 +207,16 @@ function Request_controller($http, $modal, $location, $anchorScroll, $scope, $ro
             })
             .finally(http_finally);
     };
-    
+
     this.try_submit = function(id) {
         try {
             post_data = prepare_new_request_post_data();
             // TODO: format post_data text
             message = "Your request is going to be submitted"
             for (req in me.relmon_requests) {
-                if(post_data["name"] == me.relmon_requests[req]["name"]){
+                if (post_data["name"] == me.relmon_requests[req]["name"]){
                     message = "ATENTION!!! This name already exist. Those categories which already exist will be replaced into news."
-                }   
+                }
             }
             var modal_inst = this.open_confirm_modal(message);
             modal_inst.result.then(
@@ -255,6 +253,7 @@ function Request_controller($http, $modal, $location, $anchorScroll, $scope, $ro
         var modal_inst = this.open_confirm_modal(
             "'" + relmon_request["name"] + "' records are going to be removed " +
             "from RelMon service. \nDo you want to proceed?")
+
         modal_inst.result.then(
             function() {
                 http_request_prepare();
@@ -300,10 +299,6 @@ function Request_controller($http, $modal, $location, $anchorScroll, $scope, $ro
             me.old_name = data.name;
             me.new_request_name = data.name;
             me.new_request_collapsed = false;
-            // console.log("coa")
-            // console.log(data.categories)
-            // console.log(data.categories.HLT)
-
         });
 
         me.internal_id = relmon_request;
@@ -316,7 +311,7 @@ function Request_controller($http, $modal, $location, $anchorScroll, $scope, $ro
             me.action_name = "Submit"
         }
     }
-    
+
     this.open_confirm_modal = function(message) {
         var modal_inst = $modal.open( {
             templateUrl: "modals/Confirm_modal.htm",
@@ -348,17 +343,12 @@ function Request_controller($http, $modal, $location, $anchorScroll, $scope, $ro
     console.log("vieta:");
     console.log(window.location.href);
     console.log("host url");
-    
-
-
-        // $anchorScroll()
-        // $location.hash(old);
 
 // init stuff
     $scope.param = $routeParams.param;
     console.log($scope.param);
     console.log($routeParams.param);
-    
+
     reset_sample_inputs();
     this.get_user_info()
     this.get_requests();
@@ -389,5 +379,3 @@ relmon_request_service_frontend.controller(
         };
 
 });
-
-

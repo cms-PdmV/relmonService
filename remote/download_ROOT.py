@@ -40,6 +40,7 @@ if (cookie is None):
     if (cookie is None):
         logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
         exit(1)
+
 status, data = utils.httpsget(
     CONFIG.SERVICE_HOST,
     CONFIG.SERVICE_BASE + "/requests/" + str(args.id_),
@@ -49,12 +50,14 @@ if (status != httplib.OK):
     # FIXME: solve this problem
     logger.error("Failed getting RelMon request. Status: " + str(status))
     exit(1)
+
 request = relmon.RelmonRequest(**json.loads(data))
 
 rr_path = os.path.join("requests", str(request.id_))
 original_umask = os.umask(0)
 if (not os.path.exists(rr_path)):
     os.makedirs(rr_path, 0770)
+
 os.chdir(rr_path)
 for category in request.categories:
 
@@ -62,6 +65,7 @@ for category in request.categories:
         continue
     if (not os.path.exists(category["name"])):
         os.makedirs(category["name"], 0770)
+
     os.chdir(category["name"])
     for lname, sample_list in category["lists"].iteritems():
         # NOTE: ref and target samples in the same
@@ -114,6 +118,7 @@ for category in request.categories:
                         "/lists/" + lname + "/samples/" + sample["name"],
                         data=json.dumps(sample),
                         headers={"Cookie": cookie})
+
                 elif ((file_count < sample["run_count"]) or (sample["run_count"] == 0) or (file_count < sample["root_count"])):
                     sample["status"] = "failed download"
                     status, data = utils.https(

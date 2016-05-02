@@ -127,7 +127,8 @@ class Controller(threading.Thread):
 
     def _do_downloads(self):
 
-        if (relmon.lock_thread(self.request)):
+        if self.request.lock.acquire():
+        # if (relmon.lock_thread(self.request)):
             logger.info("afther acquiring thread")
             command = """\
                 cd %s;
@@ -145,7 +146,8 @@ class Controller(threading.Thread):
 
     def _make_report(self):
         logger.info("came to _make_report")
-        if (relmon.lock_thread(self.request)):
+        if self.request.lock.acquire():
+        # if (relmon.lock_thread(self.request)):
             command ="""\
                 cd %s;
                 eval `scramv1 runtime -sh`
@@ -160,21 +162,22 @@ class Controller(threading.Thread):
 
     def stop(self):
         self._stop = True
-        if (self.worker):
-            self.worker.stop()
+        # if (self.worker):
+            # self.worker.stop()
         logger.info("Stopping Controller for RR " + str(self.request.id_))
 
     def terminate(self):
         logger.info("Terminating Controller for RR " + str(self.request.id_))
         self._terminate = True
         self.stop()
-        if (not self.is_alive()):
-            self._start_worker(WORKER_CLEANER)
+        # if (not self.is_alive()):
+            # self._start_worker(WORKER_CLEANER)
 
     def _clean(self):
+        ##TO-DO: here we should define cleaning on remote machine
         logger.info("clean for RR " + str(self.request.id_))
-        self._start_worker(WORKER_CLEANER)
-        self.worker.join()
+        # self._start_worker(WORKER_CLEANER)
+        # self.worker.join()
         if (self.worker.ret_code != 0):
             logger.error("Cleaner on remote machine failed")
             self.request.get_access()

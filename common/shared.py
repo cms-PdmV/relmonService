@@ -31,7 +31,6 @@ else:
             request = common.relmon.RelmonRequest(**request_json)
             relmons[request.id_] = request
 
-
 def new(request):
     logger.info("Trying to insert new RelmonRequest " + str(request.id_))
     with lock:
@@ -40,7 +39,6 @@ def new(request):
         relmons[request.id_] = request
         _write()
     logger.info("New RelmonRequest inserted")
-
 
 def update(request_id):
     #Updating only statuses
@@ -69,7 +67,6 @@ def drop(request_id):
         _write()
     logger.info("RelmonRequest droped")
 
-
 def _write():
     logger.info("Writing to data file")
     with open(CONFIG.DATA_FILE_NAME, 'w') as json_file:
@@ -78,4 +75,3 @@ def _write():
             tmp_data.append(relmons[el].to_dict())
         json_file.write(json.dumps(tmp_data, indent=4))
         del(tmp_data)
-

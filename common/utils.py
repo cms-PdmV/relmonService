@@ -87,11 +87,13 @@ def init_validation_logs_dir():
 def prepare_remote():
     logger.info("Preparing remote machine")
     logger.debug("Local __main__ path: " + main_path)
+    logging.getLogger("paramiko").setLevel(logging.WARNING)
     config.setstring("SERVICE_WORKING_DIR", main_path)
     config.write()
     transport = paramiko.Transport((CONFIG.REMOTE_HOST, 22))
     transport.connect(username=credentials["username"],
                       password=credentials["password"])
+
     logger.info("Connected to " + CONFIG.REMOTE_HOST)
     sftp = paramiko.SFTPClient.from_transport(transport)
     # remove files on remote machine
@@ -101,6 +103,7 @@ def prepare_remote():
             try:
                 sftp.remove(os.path.join(CONFIG.REMOTE_WORK_DIR,
                                          fattr.filename))
+
             except IOError:
                 pass
     # create remote "common" directory if it does not exist
@@ -114,23 +117,28 @@ def prepare_remote():
         if (stat.S_ISREG(fattr.st_mode)):
             try:
                 sftp.remove(os.path.join(
-                    CONFIG.REMOTE_WORK_DIR, "common", fattr.filename))
+                        CONFIG.REMOTE_WORK_DIR, "common", fattr.filename))
+
             except IOError:
                 pass
     # put files on remote machine
     logger.info("Uploading files to remote machine")
     sftp.put(os.path.join(main_path, "config.py"),
              os.path.join(CONFIG.REMOTE_WORK_DIR, "config.py"))
+
     sftp.put(os.path.join(main_path, "config"),
              os.path.join(CONFIG.REMOTE_WORK_DIR, "config"))
+
     for fname in os.listdir(os.path.join(main_path, "remote")):
         sftp.put(os.path.join(main_path, "remote", fname),
                  os.path.join(CONFIG.REMOTE_WORK_DIR, fname))
+
         sftp.chmod(os.path.join(CONFIG.REMOTE_WORK_DIR, fname), 0775)
 
     for fname in os.listdir(os.path.join(main_path, "common")):
         sftp.put(os.path.join(main_path, "common", fname),
-                 os.path.join(CONFIG.REMOTE_WORK_DIR, "common", fname))
+                os.path.join(CONFIG.REMOTE_WORK_DIR, "common", fname))
+
     sftp.close()
     transport.close()
     logger.info("Remote machine prepared")
@@ -156,11 +164,13 @@ def httpsget(host,
              certpath=CONFIG.CERTIFICATE_PATH,
              keypath=CONFIG.KEY_PATH,
              password=None):
+
     logger.info("HTTPS GET " + host + url)
     conn = httplib.HTTPSConnection(host=host,
                                    port=port,
                                    key_file=keypath,
                                    cert_file=certpath)
+
     conn.connect()
     conn.request("GET", url=url, headers=headers)
     response = conn.getresponse()
@@ -179,12 +189,15 @@ def httpsget_large_file(filepath,
                         certpath=CONFIG.CERTIFICATE_PATH,
                         keypath=CONFIG.KEY_PATH,
                         password=None):
+
     logger.info("HTTPS GET large file " + host + url +
-                " to file '" + filepath + "'")
+            " to file '" + filepath + "'")
+
     conn = httplib.HTTPSConnection(host=host,
                                    port=port,
                                    key_file=keypath,
                                    cert_file=certpath)
+
     conn.connect()
     conn.request("GET", url=url, headers=headers)
     response = conn.getresponse()
@@ -198,7 +211,6 @@ def httpsget_large_file(filepath,
                 break
     conn.close()
 
-
 def https(method,
           host,
           url,
@@ -208,18 +220,21 @@ def https(method,
           certpath=CONFIG.CERTIFICATE_PATH,
           keypath=CONFIG.KEY_PATH,
           password=None):
+
     logger.info("HTTPS " + method + " " + host + url)
     logger.debug(data)
     conn = httplib.HTTPSConnection(host=host,
                                    port=port,
                                    key_file=keypath,
                                    cert_file=certpath)
+
     conn.connect()
     headers.update({"Content-type": "application/json"})
     conn.request(method=method,
                  url=url,
                  body=data,
                  headers=headers)
+
     response = conn.getresponse()
     status = response.status
     logger.debug("HTTP code " + str(status))
@@ -230,8 +245,9 @@ def https(method,
 
 def get_sso_cookie(url):
     sso_cookie_proc = subprocess.Popen(
-        ["cern-get-sso-cookie", "-u", url, "-o", "cookie.txt"],
-        subprocess.PIPE, stderr=subprocess.PIPE)
+            ["cern-get-sso-cookie", "-u", url, "-o", "cookie.txt"],
+            subprocess.PIPE, stderr=subprocess.PIPE)
+
     stdout, stderr = sso_cookie_proc.communicate()
     if stdout:
         logger.info(stdout)
@@ -241,6 +257,7 @@ def get_sso_cookie(url):
     if (sso_cookie_proc_return != 0):
         logger.error("Getting cern sso cookie for " + url +
                      " failed. Code:" + str(sso_cookie_proc_return))
+
         return None
     with open("cookie.txt", "r") as cookiefile:
         content = cookiefile.read()
@@ -249,9 +266,9 @@ def get_sso_cookie(url):
         if (shibsession and saml_idp):
             return (shibsession.group(1) + "=" + shibsession.group(2) +
                     "; " + saml_idp.group(1) + "=" + saml_idp.group(2))
+
     logger.error("Parsing sso cookie failed")
     return None
-
 
 # given workflow name, returns workflow status from Workload
 def get_workload_manager_status(sample_name, last_update):
@@ -293,6 +310,7 @@ def get_ROOT_file_urls(CMSSW, category_name):
         url += "/RelValData/"
     else:
         url += "/RelVal/"
+
     CMSSW_parsed = re.search(CMSSW_VERSION_REGEX, CMSSW)
     logger.debug("Parssing CMSSW from:%s got:%s" % (CMSSW, str(CMSSW_parsed.group())))
     if (CMSSW_parsed is None):
@@ -301,14 +319,16 @@ def get_ROOT_file_urls(CMSSW, category_name):
     url += CMSSW_parsed.group() + "x/"
     status, data = httpsget(host=CONFIG.CMSWEB_HOST,
                             url=url)
+
     if (status != httplib.OK):
         logger.warning("get_ROOT_file_urls failing with HTTP request")
         return None
+
     hyperlinks = HYPERLINK_REGEX.findall(data)[1:]
     for u_idx, url in enumerate(hyperlinks):
         hyperlinks[u_idx] = url
-    return hyperlinks
 
+    return hyperlinks
 
 def get_DQMIO_status(sample_name):
     """Given sample name returns DQMIO dataset status. If given sample
@@ -324,22 +344,26 @@ def get_DQMIO_status(sample_name):
         ##in case wf is not yet registered in reqmgr2
         if len(data["result"]) == 0:
             return ("waiting", None)
+
         output_dses = data["result"][0][sample_name]["OutputDatasets"]
         dqmio_list = [el for el in output_dses if "DQMIO" in el]
         if len(dqmio_list) > 0:
             DQMIO_string = dqmio_list[0]
             return ("DQMIO", DQMIO_string)
+
         return ("NoDQMIO", None)
+
     logger.warning("get_DQMIO_status failing with HTTP request")
     return ("waiting", None)
-
 
 def get_run_count(DQMIO_string):
     if (not DQMIO_string):
         return None
+
     status, data = httpsget(
         host=CONFIG.CMSWEB_HOST,
         url=CONFIG.DBSREADER_URL + "/runs?dataset=" + DQMIO_string)
+
     if (status != httplib.OK):
         logger.warning("get_run_count failing with HTTP request")
         return None
@@ -350,7 +374,6 @@ def get_run_count(DQMIO_string):
     except (ValueError, LookupError):
         logger.exception("get_workload_manager_status returning with error")
         return None
-
 
 def get_ROOT_name_part(DQMIO_string):
     if (DQMIO_string):

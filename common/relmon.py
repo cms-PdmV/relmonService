@@ -155,18 +155,6 @@ class RelmonRequest():
                         continue
                     yield sample
 
-
-# Not sure if this even usable
-class Worker(Thread):
-    """Documentation for Worker
-
-    """
-    def __init__(self):
-        super(Worker, self).__init__()
-    def stop(self):
-        raise NotImplementedError("Workers should implement 'stop' method.")
-
-
 class BeastBornToCompare():
     def __init__(self, command, request):
         self.request = request
@@ -406,7 +394,6 @@ class ThreadPool:
         Reporter(self.tasks, self.name)
 
 
-
     def add_task(self, func, *args, **kargs):
         """Add a task to the queue"""
 
@@ -422,11 +409,6 @@ class ThreadPool:
     def get_queue_length(self):
         """Return the number of tasks waiting in the Queue"""
         return self.tasks.qsize()
-
-def lock_thread(self):
-        logger.info("before acq")
-        return self.lock.acquire();
-
 
 class Reporter(Thread):
     """Documentation for Reporter

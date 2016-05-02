@@ -174,7 +174,7 @@ class Edit(Resource):
         # controllers.controllers[relmon_request.id_] = (
         #     #controller.Controller(relmon_request))
         # controllers.controllers[relmon_request.id_].start()
-        return "OK", 200    
+        return "OK", 200
 
 
 class Requests(Resource):
@@ -198,7 +198,6 @@ class Requests(Resource):
         #     controller.Controller(relmon_request))
         # controllers.controllers[relmon_request.id_].start()
         return "OK", 200
-     
 
 class Terminator(Resource):
     """Documentation for Terminator
@@ -213,7 +212,10 @@ class Terminator(Resource):
             return "Already terminating", 409
         relmon_request.status = "terminating"
         relmon_request.release_priority_access()
-        controllers.controllers[request_id].terminate()
+        logger.debug("COntrollers:%s" % (controllers.controllers.keys()))
+        ##TO-DO: Should we move this to global controller?
+        shared.drop(request_id)
+        # controllers.controllers[request_id].terminate()
         return "OK", 200
 
     @admin_only

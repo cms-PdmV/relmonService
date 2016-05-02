@@ -32,13 +32,16 @@ if (cookie is None):
     if (cookie is None):
         logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
         exit(1)
+
 status, data = utils.httpsget(
     CONFIG.SERVICE_HOST,
     CONFIG.SERVICE_BASE + "/requests/" + args.id_,
     headers={"Cookie": cookie})
+
 if (status != httplib.OK):
     # FIXME: solve this problem
     exit(1)
+
 request = relmon.RelmonRequest(**json.loads(data))
 
 def send_delete_terminator():
@@ -49,12 +52,14 @@ def send_delete_terminator():
         if (cookie is None):
             logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
             exit(1)
+
     status, data = utils.https(
         "DELETE",
         CONFIG.SERVICE_HOST,
         CONFIG.SERVICE_BASE + "/requests/" + str(request.id_) +
         "/terminator",
         headers={"Cookie": cookie})
+
     if (status != httplib.OK):
         # FIXME: solve this problem
         print("konkreciai juokutis")
@@ -67,16 +72,19 @@ if (not os.path.exists(os.path.join(CONFIG.RELMON_PATH, request.name))):
     send_delete_terminator()
     # exit normally
     exit()
+
 all_categories_removed = True
 for category in request.categories:
     cat_report_path = os.path.join(CONFIG.RELMON_PATH, request.name,
-                                   category["name"])
+            category["name"])
+
     if (category["name"] == "Generator" or category["HLT"] != "only"):
         if (os.path.exists(cat_report_path)):
             if (len(category["lists"]["target"]) > 0):
                 shutil.rmtree(cat_report_path)
             else:
                 all_categories_removed = False
+
     if (category["HLT"] != "no" and category["name"] != "Generator"):
         cat_report_path += "_HLT"
         if (os.path.exists(cat_report_path)):
@@ -84,6 +92,8 @@ for category in request.categories:
                 shutil.rmtree(cat_report_path)
             else:
                 all_categories_removed = False
+
 if (all_categories_removed):
     shutil.rmtree(os.path.join(CONFIG.RELMON_PATH, request.name))
+
 send_delete_terminator()

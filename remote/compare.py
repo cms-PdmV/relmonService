@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 handler = logging.handlers.RotatingFileHandler(
     "compare.log", mode='a', maxBytes=10485760, backupCount=4)
+
 handler.setLevel(logging.INFO)
 logger.addHandler(handler)
 
@@ -29,9 +30,6 @@ logger.addHandler(handler)
 credentials = {}
 with open(CONFIG.CREDENTIALS_PATH) as cred_file:
     credentials = json.load(cred_file)
-
-
-
 
 # parse args
 parser = argparse.ArgumentParser()
@@ -47,19 +45,23 @@ if (cookie is None):
     if (cookie is None):
         logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
         exit(1)
+
 status, data = utils.httpsget(
     CONFIG.SERVICE_HOST,
     CONFIG.SERVICE_BASE + "/requests/" + args.id_,
     headers={"Cookie": cookie})
+
 if (status != httplib.OK):
     # FIXME: solve this problem
     exit(1)
+
 request = relmon.RelmonRequest(**json.loads(data))
 
 logger.info("request: %s" %request)
 # work dir and log file
 local_relmon_request = os.path.abspath(
     os.path.join("requests", str(request.id_)))
+
 os.chdir(local_relmon_request)
 local_reports = os.path.join(local_relmon_request, "reports")
 if (os.path.isdir(local_reports)):
@@ -84,16 +86,17 @@ def upload_log():
         if (cookie is None):
             logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
             exit(1)
+
     status, data = utils.https(
         "POST",
         CONFIG.SERVICE_HOST,
         CONFIG.SERVICE_BASE + "/requests/" + str(request.id_) + ".log",
         data=open(str(request.id_) + ".log", "rb"),
         headers={"Cookie": cookie})
+
     if (status != httplib.OK):
         # FIXME: solve this problem
         print("PUT log fail")
-
 
 # TODO: think of other ways for controllers to know about failures/success
 def put_status(status):
@@ -105,16 +108,17 @@ def put_status(status):
         if (cookie is None):
             logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
             exit(1)
+
     status, data = utils.https(
         "PUT",
         CONFIG.SERVICE_HOST,
         CONFIG.SERVICE_BASE + "/requests/" + str(request.id_) + "/status",
         data=json.dumps({"value": status}),
         headers={"Cookie": cookie})
+
     if (status != httplib.OK):
         # FIXME: solve this problem
         logger.error("Failed updating status")
-
 
 def finalize_report_generation(status):
     logger.info("Finalizing RelMon report production with satus: " + status)
@@ -125,7 +129,6 @@ def finalize_report_generation(status):
     os.chdir(os.path.dirname(local_relmon_request))
     ret = shutil.rmtree(local_relmon_request)
     logger.debug("rm dir:%s returned: %s" %(local_relmon_request, ret))
-
 
 def get_local_subreport_path(category_name, HLT):
     name = category_name
@@ -164,7 +167,6 @@ def levenshtein(source, target):
 
     return previous_row[-1]
 
-
 def get_downloaded_files_list(givenList, wf_list):
     logger.info("get_downloaded_files_list")
     logger.info("list length: %s" %len(givenList))
@@ -175,11 +177,14 @@ def get_downloaded_files_list(givenList, wf_list):
             wf_name = (("-").join(("__").join(wf.split("__")[1:3]).split("-")[:-1])) + "-"
             if (wf_name == el["ROOT_file_name_part"]):
                 pVar.append(wf)
-        
-        logger.info("element: %s found with elements with the same part: %s" %(el["ROOT_file_name_part"], len(pVar)))
+
+        logger.info("element: %s found with elements with the same part: %s" % (
+                el["ROOT_file_name_part"], len(pVar)))
+
         unique_list = []
         for p in pVar:
             unique_list.append(p.split("__")[0].split("_")[-1])
+
         unique_list = list(set(unique_list))
         logger.info("unique_list numb: %s" %len(unique_list))
         for p in unique_list:
@@ -188,7 +193,8 @@ def get_downloaded_files_list(givenList, wf_list):
             for q in pVar:
                 if (p == q.split("__")[0].split("_")[-1]):
                     temp.append(q)
-            logger.info("temp lenght: %s with this uniq: %s" %(len(temp), q))
+
+            logger.info("temp lenght: %s with this uniq: %s" % (len(temp), q))
             if (len(temp) > 1):
                 tmp2 = []
                 max_ver = 0
@@ -200,6 +206,7 @@ def get_downloaded_files_list(givenList, wf_list):
                         tmp2.append(tmp)
                     elif(int((tmp.split("__")[2].split("-")[-1])[1:]) == max_ver):
                         tmp2.append(tmp)
+
                 temp = tmp2
             #Find the other parameter the biggest version ever
             logger.info("temp lenght v2: %s" %len(temp))
@@ -214,13 +221,15 @@ def get_downloaded_files_list(givenList, wf_list):
                         tmp2.append(tmp)
                     elif(int((tmp.split("_")[1])[1:]) == max_ver):
                         tmp2.append(tmp)
+
                 temp = tmp2
+
             logger.info("temp in the end lenght: %s" %len(temp))
-            if(len(temp) > 1):
+            if (len(temp) > 1):
                 logger.info("!!!!!!!!WARNING!!!!!!!!")
                 logger.info("Something went wrong, there are more than one donwloaded file in the end")
                 logger.info("!!!!!!!!WARNING!!!!!!!!")
-            else: 
+            else:
                 final_list.append(temp[0])
     return final_list
 
@@ -243,7 +252,7 @@ def deleteCrashedFiles(refs, tars, category_names):
             if ((r["status"] == "NoDQMIO") or (r["status"] == "failed_rqmgr")):
                 continue
             logger.info("NoROOT or NoDQMIO or failed_rqmgr")
-            if(category_name == "Data"):
+            if (category_name == "Data"):
                 for t in tars:
                     if ((t["status"] != "NoDQMIO") and (t["status"] !="failed_rqmgr")):
                         rn = r["ROOT_file_name_part"]
@@ -255,10 +264,11 @@ def deleteCrashedFiles(refs, tars, category_names):
                 for t in tars:
                     if ((t["status"] != "NoDQMIO") and (t["status"] !="failed_rqmgr")):
                         rn = r["ROOT_file_name_part"]
-                        tn = t["ROOT_file_name_part"]    
+                        tn = t["ROOT_file_name_part"]
                         if (rn.split("__")[0] == tn.split("__")[0]):
                             tmps.append(t)
-                if(len(tmps)>1):
+
+                if (len(tmps)>1):
                     length = 100
                     for p in tmps:
                         logger.info("%s" %ref["ROOT_file_name_part"])
@@ -273,13 +283,15 @@ def deleteCrashedFiles(refs, tars, category_names):
                             logger.info("DANGER!!")
                             logger.info("Sorry, but we have found more than 1, so it will crash later :(. We take only first")
                             logger.info("DANGER!!")
+
                     temp_tar[:] = [d for d in temp_tar if d.get('ROOT_file_name_part') != tar_to_rm]
                 elif(len(tmps)==1):
                     logger.info("tmps root name: %s" %tmps[0]["ROOT_file_name_part"])
                     tar_to_rm = tmps[0]["ROOT_file_name_part"]
                     temp_tar[:] = [d for d in temp_tar if d.get('ROOT_file_name_part') != tar_to_rm]
-    logger.info("After cleaning refs size change from %s to %s" %(len(refs),len(temp_ref)))    
-    logger.info("After cleaning tars size change from %s to %s" %(len(tars),len(temp_tar)))    
+
+    logger.info("After cleaning refs size change from %s to %s" %(len(refs),len(temp_ref)))
+    logger.info("After cleaning tars size change from %s to %s" %(len(tars),len(temp_tar)))
     tars = []
     refs = temp_ref
     for t in temp_tar:
@@ -287,10 +299,12 @@ def deleteCrashedFiles(refs, tars, category_names):
             if (t["run_count"] > 0):
                 logger.info("Tar %s is good and added to tars list." %t["ROOT_file_name_part"])
                 tars.append(t)
+
         else:
             if ((t["status"] == "NoDQMIO") or (t["status"] =="failed_rqmgr")):
                 logger.info("NoROOT or NoDQMIO or failed_rqmgr")
                 continue
+
             if(category_name == "Data"):
                 for r in temp_ref:
                     rn = r["ROOT_file_name_part"]
@@ -298,14 +312,16 @@ def deleteCrashedFiles(refs, tars, category_names):
                     if ((rn.split("__")[0] == tn.split("__")[0])
                         and (rn.split("__")[1].split("-")[1] == tn.split("__")[1].split("-")[1])):
                         refs[:] = [d for d in refs if d.get('ROOT_file_name_part') != rn]
+
             else:
                 tmps = []
                 for t in tars:
                     rn = r["ROOT_file_name_part"]
-                    tn = t["ROOT_file_name_part"]    
+                    tn = t["ROOT_file_name_part"]
                     if (rn.split("__")[0] == tn.split("__")[0]):
                         tmps.append(t)
-                if(len(tmps)>1):
+
+                if (len(tmps)>1):
                     length = 100
                     ref_to_rm = "DontRemoveAnything"
                     for p in tmps:
@@ -321,19 +337,18 @@ def deleteCrashedFiles(refs, tars, category_names):
                             logger.info("DANGER!!")
                             logger.info("Sorry, but we have found more than 1, so it will crash later :(. We take only first")
                             logger.info("DANGER!!")
+
                     refs[:] = [d for d in refs if d.get('ROOT_file_name_part') != ref_to_rm]
                 elif(len(tmps)==1):
                     logger.info("tmps root name: %s" %tmps[0]["ROOT_file_name_part"])
                     ref_to_rm = tmps[0]["ROOT_file_name_part"]
                     refs[:] = [d for d in refs if d.get('ROOT_file_name_part') != ref_to_rm]
-    logger.info("In the end: Tar list: %s\n" %tars)   
-    logger.info("In the end: Ref list: %s\n" %refs)   
+    logger.info("In the end: Tar list: %s\n" %tars)
+    logger.info("In the end: Ref list: %s\n" %refs)
     return refs, tars
 
-
-    
 # Here we trying to get all root files from category, deeper we do a lot of others things,
-# I'll tell you later what. Ok after cleaning wfs' lists we trying to match wfs from both of lists. 
+# I'll tell you later what. Ok after cleaning wfs' lists we trying to match wfs from both of lists.
 # And after that we trying to check downloaded files. because there could be more then  1 version.
 def get_list_of_wf(refs, tars, category):
     logger.info("Trying to get list of workflows Method")
@@ -366,10 +381,11 @@ def get_list_of_wf(refs, tars, category):
         pRef = []
         pTar = []
         if ((ref["status"] == "NoDQMIO") or (ref["status"] == "NoROOT")):
-            logger.info("NoROOT or NoDQMIO") 
+            logger.info("NoROOT or NoDQMIO")
         for tar in tars:
             if ((tar["status"] == "NoDQMIO") or (tar["status"] == "NoROOT")):
                 continue
+
             lref = ref["ROOT_file_name_part"]
             ltar = tar["ROOT_file_name_part"]
             if(lref.split("__")[0] == ltar.split("__")[0]):
@@ -377,8 +393,10 @@ def get_list_of_wf(refs, tars, category):
                 ltar = tar["ROOT_file_name_part"].split("-")[1].split("_")[-1]
                 if((category["name"] == "Data") and (lref != ltar)):
                     continue
+
                 pTar.append(tar)
                 logger.info("pTar size: %s" %len(pTar))
+
             if (len(pTar) > 1):
                 length = 20
                 tar3 = []
@@ -394,8 +412,10 @@ def get_list_of_wf(refs, tars, category):
                         tar3.append(p)
                     elif (length == levenshtein(lref, ltar)):
                         tar3.append(p)
+
                 pTar = tar3
                 logger.info("Now list length is: %s" %len(pTar))
+
         if (len(pTar) > 1):
             logger.info("In this case you should call for Goku San: +37063432405")
             logger.info("We found more than 1, it means that we don't compare those wfs: \n%s " %pTar)
@@ -409,7 +429,7 @@ def get_list_of_wf(refs, tars, category):
     logger.info("pTar lenght: %s" %len(ref2))
     logger.info("pRef lenght: %s" %len(tar2))
 
-    if (ref2 > 0 and tar2 > 0 and len(tar2)==len(ref2)):
+    if (ref2 > 0 and tar2 > 0 and len(tar2) == len(ref2)):
         ref2 = get_downloaded_files_list(ref2, wf_list)
         tar2 = get_downloaded_files_list(tar2, wf_list)
         # If you want to print lists of REF and TAR you can uncomment this part :)
@@ -424,7 +444,6 @@ def get_list_of_wf(refs, tars, category):
         return tar2, ref2
     else:
         return ref2, tar2
-       
 
 def validate(category_name, HLT):
     local_subreport = get_local_subreport_path(category_name, HLT)
@@ -432,6 +451,7 @@ def validate(category_name, HLT):
     if (not os.path.exists(local_subreport)):
         os.makedirs(local_subreport)
         os.chmod(local_subreport, 0775)
+
     tar_list = category["lists"]["target"]
     ref_list = category["lists"]["reference"]
     returned_lists = get_list_of_wf(ref_list, tar_list, category)
@@ -455,6 +475,7 @@ def validate(category_name, HLT):
 
     if (HLT):
         validation_cmd.append("--HLT")
+
     logFile.write("!       SUBPROCESS: " + " ".join(validation_cmd) + "\n")
     logFile.flush()
     # return process exit code
@@ -477,17 +498,20 @@ def move_to_afs(category_name, HLT):
     local_subreport = get_local_subreport_path(category_name, HLT)
     logger.info("local_subreport: %s" %local_subreport)
     remote_subreport = os.path.join(remote_reports,
-                                    os.path.basename(local_subreport))
+            os.path.basename(local_subreport))
+
     logger.info("remote_subreport: %s" %remote_subreport)
     if (os.path.exists(remote_subreport)):
         logger.info("This: %s subreport already exist. Old files will be deleted." %remote_subreport)
         shutil.rmtree(remote_subreport)
+
     shutil.copytree(local_subreport, remote_subreport)
 
 for category in request.categories:
     ind = category["name"]
     if (not category["lists"]["target"]):
         continue
+
     if (category["name"] == "Generator" or category["HLT"] != "only"):
         # validate and compress; failure if either task failed
         if ((validate(category["name"], False) != 0) or
@@ -496,12 +520,15 @@ for category in request.categories:
             finalize_report_generation("failed")
             exit(1)
         move_to_afs(category["name"], False)
+
     if (category["name"] == "Generator"):
         continue
+
     if (category["HLT"] != "no"):
         if ((validate(category["name"], True) != 0) or
             (compress(category["name"], True) != 0)):
             finalize_report_generation("failed")
             exit(1)
         move_to_afs(category["name"], True)
+
 finalize_report_generation("finished")
