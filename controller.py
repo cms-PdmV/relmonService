@@ -128,7 +128,6 @@ class Controller(threading.Thread):
     def _do_downloads(self):
 
         if self.request.lock.acquire():
-        # if (relmon.lock_thread(self.request)):
             logger.info("afther acquiring thread")
             command = """\
                 cd %s;
@@ -147,7 +146,6 @@ class Controller(threading.Thread):
     def _make_report(self):
         logger.info("came to _make_report")
         if self.request.lock.acquire():
-        # if (relmon.lock_thread(self.request)):
             command ="""\
                 cd %s;
                 eval `scramv1 runtime -sh`
