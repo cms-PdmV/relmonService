@@ -254,13 +254,12 @@ def get_sso_cookie(url):
 
 
 # given workflow name, returns workflow status from Workload
-# Management database 'wmstats'
 def get_workload_manager_status(sample_name, last_update):
-    url = CONFIG.WMSTATS_URL + "/_all_docs?keys=%5B%22"
-    url += sample_name
-    url += "%22%5D&include_docs=true"
+
     status, data = httpsget(host=CONFIG.CMSWEB_HOST,
-                            url=url)
+            url=CONFIG.DATATIER_CHECK_URL + '?name=' + sample_name,
+            headers={'Accept': 'application/json'})
+
     # TODO: handle failures
     if (status != httplib.OK):
         return None
@@ -269,9 +268,10 @@ def get_workload_manager_status(sample_name, last_update):
         # FIXME: take status with most reecent 'update-time', instead
         # of taking last element
         ##for non existing wf and those which were removed from wmstats
-        if 'doc' in data["rows"][0] and data["rows"][0]['doc'] != None:
-            wm_status = (
-                    data["rows"][0]["doc"]["RequestTransition"][-1]["Status"])
+
+        if len(data["result"]) > 0:
+            wm_status = data["result"][0][sample_name]["RequestTransition"][-1]["Status"]
+            logger.debug("Returning WMSTATUS: %s" % (wm_status))
             return wm_status
         else:
             elapsed_time = (int(time.time()) - last_update) / 60
@@ -280,7 +280,7 @@ def get_workload_manager_status(sample_name, last_update):
                 return wm_status
     except (ValueError, LookupError):
         logger.exception("get_workload_manager_status returning with error")
-        return None 
+        return None
 
 
 def get_ROOT_file_urls(CMSSW, category_name):
@@ -294,6 +294,7 @@ def get_ROOT_file_urls(CMSSW, category_name):
     else:
         url += "/RelVal/"
     CMSSW_parsed = re.search(CMSSW_VERSION_REGEX, CMSSW)
+    logger.debug("Parssing CMSSW from:%s got:%s" % (CMSSW, str(CMSSW_parsed.group())))
     if (CMSSW_parsed is None):
         logger.warning("Failed parsing CMSSW version from '" + CMSSW + "'")
         return None
