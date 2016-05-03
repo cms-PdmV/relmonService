@@ -336,10 +336,15 @@ class StatusUpdater():
             for sample_index in range(len(sample_list)):
                 logger.debug("Getting file urls for: %s in category: %s" % (
                     sample_list[sample_index]["name"], category["name"]))
-                file_urls = common.utils.get_ROOT_file_urls(
-                    sample_list[sample_index]["DQMIO_string"],
-                    category["name"])
-                    # FIXME: temporary solution
+
+                if sample_list[sample_index]["DQMIO_string"] != None:
+                    file_urls = common.utils.get_ROOT_file_urls(
+                        sample_list[sample_index]["DQMIO_string"],
+                        category["name"])
+                        # FIXME: temporary solution
+                else:
+                    file_urls = None
+
                 self.request.get_access()
                 if (sample_list[sample_index]["wm_status"] == "wf doesn't exist"):
                     sample_list[sample_index]["status"] = "failed_rqmgr"
