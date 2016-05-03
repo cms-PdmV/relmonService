@@ -90,6 +90,7 @@ for category in request.categories:
 
             for file_url in file_urls:
                 if (sample["ROOT_file_name_part"] not in file_url):
+                    logger.debug("file_name_part not in URL")
                     continue
                 # TODO: handle failures (httpsget_large_file)
                 if (os.path.isfile(file_url.split("/")[-1])):
@@ -120,6 +121,7 @@ for category in request.categories:
                         headers={"Cookie": cookie})
 
                 elif ((file_count < sample["run_count"]) or (sample["run_count"] == 0) or (file_count < sample["root_count"])):
+                    logger.debug("marking as failed download. file_cout:%s" % (file_count))
                     sample["status"] = "failed download"
                     status, data = utils.https(
                         "PUT",
