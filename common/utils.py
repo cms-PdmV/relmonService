@@ -97,6 +97,7 @@ def prepare_remote():
     logger.info("Connected to " + CONFIG.REMOTE_HOST)
     sftp = paramiko.SFTPClient.from_transport(transport)
     # remove files on remote machine
+    ##TO-DO maybe we want to leave previous files? logs downloads etc...
     logger.info("Removing old files on remote machine")
     for fattr in sftp.listdir_attr(CONFIG.REMOTE_WORK_DIR):
         if (stat.S_ISREG(fattr.st_mode)):

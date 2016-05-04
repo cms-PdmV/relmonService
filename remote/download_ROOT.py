@@ -13,24 +13,46 @@ import json
 from config import CONFIG
 from common import utils, relmon
 
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-handler = logging.handlers.RotatingFileHandler(
-    "download_ROOT.log", mode='a', maxBytes=10485760, backupCount=4)
-handler.setLevel(logging.DEBUG)
-logger.addHandler(handler)
-
 def get_first_existing_sample(sample_list):
     for sample in sample_list:
         if (sample["DQMIO_string"] != None):
             return sample
 
+class IdFilter(logging.Filter):
+    """
+    This is a filter which injects contextual information into the log.
+    """
+
+    def filter(self, record):
+
+        if args.id_:
+            record.id_ = args.id_
+        else:
+            record.id_ = "main_thread"
+        return True
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument(dest="id_", help="FIXME: id help")
-# parser.add_argument("--")
-# parser.add_argument("--dry", dest="dry", action="store_true", default=False)
 args = parser.parse_args()
+
+##get logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+#define logger handler and formatter
+handler = logging.handlers.RotatingFileHandler(
+        "download_ROOT.log", maxBytes=10485760, backupCount=4)
+
+formatter = logging.Formatter(fmt='[%(asctime)s][%(id_)s][%(levelname)s] %(message)s',
+        datefmt='%d/%b/%Y:%H:%M:%S')
+
+id_filt = IdFilter()
+
+##set all logger module
+handler.setFormatter(formatter)
+handler.addFilter(id_filt)
+logger.addHandler(handler)
 
 # get relmon
 cookie = None

@@ -14,28 +14,52 @@ import subprocess
 import shutil
 import glob
 import numpy as np
+
 from config import CONFIG
 from common import utils, relmon
 
+class IdFilter(logging.Filter):
+    """
+    This is a filter which injects contextual information into the log.
+    """
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-handler = logging.handlers.RotatingFileHandler(
-    "compare.log", mode='a', maxBytes=10485760, backupCount=4)
+    def filter(self, record):
 
-handler.setLevel(logging.DEBUG)
-logger.addHandler(handler)
-
-# read credentials
-credentials = {}
-with open(CONFIG.CREDENTIALS_PATH) as cred_file:
-    credentials = json.load(cred_file)
+        if args.id_:
+            record.id_ = args.id_
+        else:
+            record.id_ = "main_thread"
+        return True
 
 # parse args
 parser = argparse.ArgumentParser()
 parser.add_argument(dest="id_", help="FIXME: id help")
 # TODO: other arguments
 args = parser.parse_args()
+
+##Get logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+##define logger handler and formatter
+handler = logging.handlers.RotatingFileHandler(
+        "compare.log", maxBytes=10485760, backupCount=4)
+
+formatter = logging.Formatter(fmt='[%(asctime)s][%(id_)s][%(levelname)s] %(message)s',
+        datefmt='%d/%b/%Y:%H:%M:%S')
+
+id_filt = IdFilter()
+
+##set all logger module
+handler.setFormatter(formatter)
+handler.addFilter(id_filt)
+logger.addHandler(handler)
+
+
+# read credentials
+credentials = {}
+with open(CONFIG.CREDENTIALS_PATH) as cred_file:
+    credentials = json.load(cred_file)
 
 # get RelMon
 cookie = None
