@@ -23,7 +23,7 @@ logger.setLevel(logging.DEBUG)
 handler = logging.handlers.RotatingFileHandler(
     "compare.log", mode='a', maxBytes=10485760, backupCount=4)
 
-handler.setLevel(logging.INFO)
+handler.setLevel(logging.DEBUG)
 logger.addHandler(handler)
 
 # read credentials
@@ -235,7 +235,7 @@ def get_downloaded_files_list(givenList, wf_list):
 
 # In this method we go through the refs and tars lists and if any on wf has wrong status(not downloaded) 
 # We check another lists and try to delete bad wfs.
-def deleteCrashedFiles(refs, tars, category_names):
+def deleteCrashedFiles(refs, tars, category_name):
     logger.info("Method to delete files with wrong status")
     logger.info("pTar lenght: %s" %len(refs))
     logger.info("pRef lenght: %s" %len(tars))
@@ -388,16 +388,25 @@ def get_list_of_wf(refs, tars, category):
 
             lref = ref["ROOT_file_name_part"]
             ltar = tar["ROOT_file_name_part"]
+            ##We check Era in RelVals
             if(lref.split("__")[0] == ltar.split("__")[0]):
                 lref = ref["ROOT_file_name_part"].split("-")[1].split("_")[-1]
                 ltar = tar["ROOT_file_name_part"].split("-")[1].split("_")[-1]
-                if((category["name"] == "Data") and (lref != ltar)):
-                    continue
+                logger.debug("lref: %s" % (lref))
+                logger.debug("ltar: %s" % (ltar))
+                if ("RelVal" in lref and "RelVal" in ltar):
+                    ##there could be wf's without Era -> most likely not RelVals
+                    if((category["name"] == "Data") and (lref != ltar)):
+                        ##If its Data and it's era doesn't match
+                        logger.debug("it's a Data category ant lref != ltar")
+                        continue
 
                 pTar.append(tar)
                 logger.info("pTar size: %s" %len(pTar))
 
+            logger.debug("before pTar>1")
             if (len(pTar) > 1):
+                logger.debug("inside pTar>1")
                 length = 20
                 tar3 = []
                 for p in pTar:

@@ -52,8 +52,8 @@ class Controller(threading.Thread):
 
     @uncaught_exception_to_log_decorator
     def run(self):
-        try:
-            while True:
+        while True:
+            try:
                 logger.info('Running main Controller')
                 if (len(shared.relmons) > 0):
                     for key, value in shared.relmons.items():
@@ -68,7 +68,11 @@ class Controller(threading.Thread):
                             waiting = True
                         if (waiting):
                             if (not self._update_statuses()):
-                                logger.debug("Shit just got real!")
+                                logger.debug("RR: %s Not all wf's are complete and uploaded DQM ROOT files" % (
+                                        self.request.id_))
+
+                                ##lame fix for now not to trigger downloading when not all wfs are there
+                                continue
                         logger.debug("Before downloading=False")
                         downloading = False
                         logger.debug("downloading:%s" % (downloading))
@@ -88,9 +92,9 @@ class Controller(threading.Thread):
                             self.request.status = "comparing"
                             shared.update(self.request.id_)
                 logger.debug("Going to sleep for 30sec")
-                time.sleep(30)
-        except Exception as ex:
-            logger.info("something went wrong. Crashed on Controler.run: %s" % (str(ex)))
+            except Exception as ex:
+                logger.info("something went wrong. Crashed on Controler.run: %s" % (str(ex)))
+            time.sleep(30)
 
     def _update_statuses(self):
         logger.info("Request id: %s" % (self.request.id_))
@@ -132,8 +136,8 @@ class Controller(threading.Thread):
             command = """\
                 cd %s;
                 ./download_ROOT.py %s
-                > download_ROOT.out 2>&1
-                """ % (CONFIG.REMOTE_WORK_DIR, str(self.request.id_))
+                > download_ROOT_%s.out 2>&1
+                """ % (CONFIG.REMOTE_WORK_DIR, str(self.request.id_), str(self.request.id_))
             task = relmon.BeastBornToDownload(command, self.request)
 
 
@@ -150,8 +154,8 @@ class Controller(threading.Thread):
                 cd %s;
                 eval `scramv1 runtime -sh`
                 cd %s;
-                ./compare.py %s > compare.out 2>&1
-                """ % (CONFIG.REMOTE_CMSSW_DIR, CONFIG.REMOTE_WORK_DIR, self.request.id_)
+                ./compare.py %s > compare_%s.out 2>&1
+                """ % (CONFIG.REMOTE_CMSSW_DIR, CONFIG.REMOTE_WORK_DIR, self.request.id_, self.request.id_)
             task = relmon.BeastBornToCompare(command, self.request)
             relmon.reports_queue.add_task(task.run)
             logger.info("Added:%s to queue COMPARE" % (self.request.id_))
