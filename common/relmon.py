@@ -253,9 +253,20 @@ class StatusUpdater():
         logger.info("Runing StatusUpdater for RR " + str(self.request.id_))
         try:
             has_new_DQMIO = self.update_DQMIO_statuses()
+            run_count_updated = False
             if (has_new_DQMIO):
                 self.update_ROOT_names_parts()
                 self.update_run_counts()
+                run_count_updated = True
+
+            if self.run_count_is_zero():
+                ##if run_count=0 this means runs for dataset was not updated for wf's
+                logger.debug("RR: %s run_count=0 for a sample" % (self.request.id_))
+                if not run_count_updated:
+                    ##we don't want to run same update as before
+                    logger.debug("RR: %s checking run_count once again" % (self.request.id_))
+                    self.update_run_counts()
+
             self.update_wm_statuses()
             self.update_ROOT_statuses()
         except:
@@ -282,6 +293,15 @@ class StatusUpdater():
             if (sample["status"] == "DQMIO"):
                 request_has_new_DQMIO_samples = True
         return request_has_new_DQMIO_samples
+
+    def run_count_is_zero(self):
+        """
+        check if the relmon request has run_count=0 -> this means reqmgr2 lagged and returned false information
+        """
+        for sample in self.request.samples_iter():
+            if sample["run_count"] == 0
+                return True
+        return False
 
     def update_ROOT_names_parts(self):
         self.request.get_access()
