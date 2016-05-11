@@ -299,7 +299,7 @@ class StatusUpdater():
         check if the relmon request has run_count=0 -> this means reqmgr2 lagged and returned false information
         """
         for sample in self.request.samples_iter():
-            if sample["run_count"] == 0
+            if sample["run_count"] == 0:
                 return True
         return False
 
