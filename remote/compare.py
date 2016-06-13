@@ -431,22 +431,31 @@ def get_list_of_wf(refs, tars, category):
             logger.debug("before pTar>1")
             if (len(pTar) > 1):
                 logger.debug("inside pTar>1")
-                length = 20
+                length = 0
                 tar3 = []
                 for p in pTar:
                     logger.info("%s" %ref["ROOT_file_name_part"])
                     logger.info("%s" %p["ROOT_file_name_part"])
                     lref = ref["ROOT_file_name_part"].split("__")[1].split("-")[1]
                     ltar = p["ROOT_file_name_part"].split("__")[1].split("-")[1]
-                    logger.info("%s \n%s \nlength: %s\n**************" %(lref, ltar, levenshtein(lref, ltar)))
-                    if(levenshtein(lref, ltar) < length):
-                        tar3 = []
-                        length = levenshtein(ltar, lref)
-                        tar3.append(p)
-                    elif (length == levenshtein(lref, ltar)):
-                        tar3.append(p)
+                    distance = levenshtein(lref, ltar)
+                    logger.info("%s \n%s \nlength: %s\n**************" %(lref, ltar, distance))
+                    ##we check for the min distance
+                    if length == 0:
+                        # on the first run
+                        length = distance
+                        pTar = [p]
+                    elif distance < length:
+                        length = distance
+                        pTar = [p]
+                    # if (distance < length):
+                        # tar3 = []
+                        # length = levenshtein(ltar, lref)
+                        # tar3.append(p)
+                    # elif (length == distance):
+                        # tar3.append(p)
 
-                pTar = tar3
+                # pTar = tar3
                 logger.info("Now list length is: %s" %len(pTar))
 
         if (len(pTar) > 1):
