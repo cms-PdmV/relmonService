@@ -513,10 +513,10 @@ def validate(category_name, HLT):
                       "-N 6",
                       "--hash_name"]
 
-    logger.info("print validation_cmd: %s" %validation_cmd)
-
     if (HLT):
         validation_cmd.append("--HLT")
+
+    logger.info("print validation_cmd: %s" % validation_cmd)
 
     logFile.write("!       SUBPROCESS: " + " ".join(validation_cmd) + "\n")
     logFile.flush()
