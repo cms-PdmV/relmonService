@@ -428,7 +428,6 @@ def get_list_of_wf(refs, tars, category):
                 pTar.append(tar)
                 logger.info("pTar size: %s" %len(pTar))
 
-            logger.debug("before pTar>1")
             if (len(pTar) > 1):
                 logger.debug("inside pTar>1")
                 length = 0
@@ -460,9 +459,13 @@ def get_list_of_wf(refs, tars, category):
 
         if (len(pTar) > 1):
             logger.info("In this case you should call for Goku San: +37063432405")
-            logger.info("We found more than 1, it means that we don't compare those wfs: \n%s " %pTar)
+            logger.info("We found more than 1, it means that we don't compare those wfs:%s ref:%s" % (
+                    pTar,ref))
+
         elif(len(pTar) < 1):
-            logger.info("We found more than 1, it means that we don't compare those wfs: \n%s " %pTar)
+            logger.info("We found less than 1, it means that we don't compare those wfs:%s ref:%s" % (
+                    pTar, ref))
+
         elif(len(pTar) == 1):
             logger.info("We matched these files:\n%s\n%s" %(ref["ROOT_file_name_part"],pTar[0]["ROOT_file_name_part"]))
             ref2.append(ref)
