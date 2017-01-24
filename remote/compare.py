@@ -437,7 +437,8 @@ def get_list_of_wf(refs, tars, category):
                     logger.info("%s" %p["ROOT_file_name_part"])
                     lref = ref["ROOT_file_name_part"].split("__")[1].split("-")[1]
                     ltar = p["ROOT_file_name_part"].split("__")[1].split("-")[1]
-                    distance = levenshtein(lref, ltar)
+                    ##we do +1 in case we find exact match on the first go, so lenght wouldnt be 0
+                    distance = levenshtein(lref, ltar) + 1
                     logger.info("%s \n%s \nlength: %s\n**************" %(lref, ltar, distance))
                     ##we check for the min distance
                     if length == 0:
