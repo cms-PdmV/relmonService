@@ -98,8 +98,10 @@ logFile = open(str(request.id_) + ".log", "w")
 os.chmod(str(request.id_) + ".log", 0664)
 
 remote_reports = os.path.join(CONFIG.RELMON_PATH, request.name)
-# if (os.path.isdir(remote_reports)):
-#     shutil.rmtree(remote_reports)
+##Clean working directory
+##Comment if we want the remote directories left after completion
+if (os.path.isdir(remote_reports)):
+    shutil.rmtree(remote_reports)
 logger.info("remote_reports:: %s" %remote_reports)
 def upload_log():
     global request
