@@ -98,11 +98,10 @@ logFile = open(str(request.id_) + ".log", "w")
 os.chmod(str(request.id_) + ".log", 0664)
 
 remote_reports = os.path.join(CONFIG.RELMON_PATH, request.name)
-##Clean working directory
-##Comment if we want the remote directories left after completion
 if (os.path.isdir(remote_reports)):
     shutil.rmtree(remote_reports)
 logger.info("remote_reports:: %s" %remote_reports)
+
 def upload_log():
     global request
     cookie = None
@@ -153,6 +152,8 @@ def finalize_report_generation(status):
     upload_log()
     put_status(status)
     os.chdir(os.path.dirname(local_relmon_request))
+    ##Clean working directory
+    ##Comment if we want the remote directories left after completion
     ret = shutil.rmtree(local_relmon_request)
     logger.debug("rm dir:%s returned: %s" %(local_relmon_request, ret))
 
@@ -416,8 +417,10 @@ def get_list_of_wf(refs, tars, category):
             ltar = tar["ROOT_file_name_part"]
             ##We check Era in RelVals
             if(lref.split("__")[0] == ltar.split("__")[0]):
+                ##take processing_string out of DQM file name
                 lref = ref["ROOT_file_name_part"].split("-")[1].split("_")[-1]
                 ltar = tar["ROOT_file_name_part"].split("-")[1].split("_")[-1]
+
                 logger.debug("lref: %s" % (lref))
                 logger.debug("ltar: %s" % (ltar))
                 if ("RelVal" in lref and "RelVal" in ltar):
@@ -430,6 +433,8 @@ def get_list_of_wf(refs, tars, category):
                 pTar.append(tar)
                 logger.info("pTar size: %s" %len(pTar))
 
+            ##in case we have more than 2 possible target candidates:
+            ##we do levenshtein distance check.
             if (len(pTar) > 1):
                 logger.debug("inside pTar>1")
                 length = 0
