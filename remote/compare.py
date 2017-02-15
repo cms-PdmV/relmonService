@@ -377,7 +377,7 @@ def deleteCrashedFiles(refs, tars, category_name):
 # Here we trying to get all root files from category, deeper we do a lot of others things,
 # I'll tell you later what. Ok after cleaning wfs' lists we trying to match wfs from both of lists.
 # And after that we trying to check downloaded files. because there could be more then  1 version.
-def get_list_of_wf(refs, tars, category):
+def get_list_of_wf(refs, tars, category, auto_mode):
     logger.info("Trying to get list of workflows Method")
     ref2 = []
     tar2 = []
@@ -404,80 +404,86 @@ def get_list_of_wf(refs, tars, category):
         tars = temp
         changed = True
 
-    for ref in refs:
-        pRef = []
-        pTar = []
-        if ((ref["status"] == "NoDQMIO") or (ref["status"] == "NoROOT")):
-            logger.info("NoROOT or NoDQMIO")
-        for tar in tars:
-            if ((tar["status"] == "NoDQMIO") or (tar["status"] == "NoROOT")):
-                continue
+    if auto_mode:
+        for ref in refs:
+            pRef = []
+            pTar = []
+            if ((ref["status"] == "NoDQMIO") or (ref["status"] == "NoROOT")):
+                logger.info("NoROOT or NoDQMIO")
+            for tar in tars:
+                if ((tar["status"] == "NoDQMIO") or (tar["status"] == "NoROOT")):
+                    continue
 
-            lref = ref["ROOT_file_name_part"]
-            ltar = tar["ROOT_file_name_part"]
-            ##We check Era in RelVals
-            if(lref.split("__")[0] == ltar.split("__")[0]):
-                ##take processing_string out of DQM file name
-                lref = ref["ROOT_file_name_part"].split("-")[1].split("_")[-1]
-                ltar = tar["ROOT_file_name_part"].split("-")[1].split("_")[-1]
+                lref = ref["ROOT_file_name_part"]
+                ltar = tar["ROOT_file_name_part"]
+                ##We check Era in RelVals
+                if(lref.split("__")[0] == ltar.split("__")[0]):
+                    ##take processing_string out of DQM file name
+                    lref = ref["ROOT_file_name_part"].split("-")[1].split("_")[-1]
+                    ltar = tar["ROOT_file_name_part"].split("-")[1].split("_")[-1]
 
-                logger.debug("lref: %s" % (lref))
-                logger.debug("ltar: %s" % (ltar))
-                if ("RelVal" in lref and "RelVal" in ltar):
-                    ##there could be wf's without Era -> most likely not RelVals
-                    if((category["name"] == "Data") and (lref != ltar)):
-                        ##If its Data and it's era doesn't match
-                        logger.debug("it's a Data category ant lref != ltar")
-                        continue
+                    logger.debug("lref: %s" % (lref))
+                    logger.debug("ltar: %s" % (ltar))
+                    if ("RelVal" in lref and "RelVal" in ltar):
+                        ##there could be wf's without Era -> most likely not RelVals
+                        if((category["name"] == "Data") and (lref != ltar)):
+                            ##If its Data and it's era doesn't match
+                            logger.debug("it's a Data category ant lref != ltar")
+                            continue
 
-                pTar.append(tar)
-                logger.info("pTar size: %s" %len(pTar))
+                    pTar.append(tar)
+                    logger.info("pTar size: %s" %len(pTar))
 
-            ##in case we have more than 2 possible target candidates:
-            ##we do levenshtein distance check.
+                ##in case we have more than 2 possible target candidates:
+                ##we do levenshtein distance check.
+                if (len(pTar) > 1):
+                    logger.debug("inside pTar>1")
+                    length = 0
+                    tar3 = []
+                    for p in pTar:
+                        logger.info("%s" %ref["ROOT_file_name_part"])
+                        logger.info("%s" %p["ROOT_file_name_part"])
+                        lref = ref["ROOT_file_name_part"].split("__")[1].split("-")[1]
+                        ltar = p["ROOT_file_name_part"].split("__")[1].split("-")[1]
+                        ##we do +1 in case we find exact match on the first go, so lenght wouldnt be 0
+                        distance = levenshtein(lref, ltar) + 1
+                        logger.info("%s \n%s \nlength: %s\n**************" %(lref, ltar, distance))
+                        ##we check for the min distance
+                        if length == 0:
+                            # on the first run
+                            length = distance
+                            pTar = [p]
+                        elif distance < length:
+                            length = distance
+                            pTar = [p]
+                        # if (distance < length):
+                            # tar3 = []
+                            # length = levenshtein(ltar, lref)
+                            # tar3.append(p)
+                        # elif (length == distance):
+                            # tar3.append(p)
+
+                    # pTar = tar3
+                    logger.info("Now list length is: %s" %len(pTar))
+
             if (len(pTar) > 1):
-                logger.debug("inside pTar>1")
-                length = 0
-                tar3 = []
-                for p in pTar:
-                    logger.info("%s" %ref["ROOT_file_name_part"])
-                    logger.info("%s" %p["ROOT_file_name_part"])
-                    lref = ref["ROOT_file_name_part"].split("__")[1].split("-")[1]
-                    ltar = p["ROOT_file_name_part"].split("__")[1].split("-")[1]
-                    ##we do +1 in case we find exact match on the first go, so lenght wouldnt be 0
-                    distance = levenshtein(lref, ltar) + 1
-                    logger.info("%s \n%s \nlength: %s\n**************" %(lref, ltar, distance))
-                    ##we check for the min distance
-                    if length == 0:
-                        # on the first run
-                        length = distance
-                        pTar = [p]
-                    elif distance < length:
-                        length = distance
-                        pTar = [p]
-                    # if (distance < length):
-                        # tar3 = []
-                        # length = levenshtein(ltar, lref)
-                        # tar3.append(p)
-                    # elif (length == distance):
-                        # tar3.append(p)
+                logger.info("In this case you should call for Goku San: +37063432405")
+                logger.info("We found more than 1, it means that we don't compare those wfs:%s ref:%s" % (
+                        pTar,ref))
 
-                # pTar = tar3
-                logger.info("Now list length is: %s" %len(pTar))
+            elif(len(pTar) < 1):
+                logger.info("We found less than 1, it means that we don't compare those wfs:%s ref:%s" % (
+                        pTar, ref))
 
-        if (len(pTar) > 1):
-            logger.info("In this case you should call for Goku San: +37063432405")
-            logger.info("We found more than 1, it means that we don't compare those wfs:%s ref:%s" % (
-                    pTar,ref))
-
-        elif(len(pTar) < 1):
-            logger.info("We found less than 1, it means that we don't compare those wfs:%s ref:%s" % (
-                    pTar, ref))
-
-        elif(len(pTar) == 1):
-            logger.info("We matched these files:\n%s\n%s" %(ref["ROOT_file_name_part"],pTar[0]["ROOT_file_name_part"]))
-            ref2.append(ref)
-            tar2.append(pTar[0])
+            elif(len(pTar) == 1):
+                logger.info("We matched these files:\n%s\n%s" %(ref["ROOT_file_name_part"],pTar[0]["ROOT_file_name_part"]))
+                ref2.append(ref)
+                tar2.append(pTar[0])
+    else:
+        ##we trust the user and do manual pairing
+        for indx, el in enumerate(refs):
+            ref2.append(el)
+            tar2.append(tars[indx])
 
     logger.info("pTar lenght: %s" %len(ref2))
     logger.info("pRef lenght: %s" %len(tar2))
@@ -507,7 +513,13 @@ def validate(category_name, HLT):
 
     tar_list = category["lists"]["target"]
     ref_list = category["lists"]["reference"]
-    returned_lists = get_list_of_wf(ref_list, tar_list, category)
+    if "automatic_pairing" in category:
+        __auto_pairing_mode = category["automatic_pairing"]
+    else:
+        __auto_pairing_mode = True
+    logger.debug("Using AUTO paring mode: %s" % (__auto_pairing_mode))
+
+    returned_lists = get_list_of_wf(ref_list, tar_list, category, auto_mode=__auto_pairing_mode)
     cat_path = category_name+"/"
 
     ref_list = [cat_path + s for s in returned_lists[0]]

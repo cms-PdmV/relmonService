@@ -21,6 +21,7 @@ function Request_controller_exception(message) {
 
 function Request_controller($http, $modal, $location, $anchorScroll, $scope, $routeParams, $document) {
 
+    $scope.console = console;
 // public properties
     this.sample_inputs = [];
     this.new_request_name = "";
@@ -55,7 +56,8 @@ function Request_controller($http, $modal, $location, $anchorScroll, $scope, $ro
                         "data": ""
                     }
                 },
-                "HLT": "both"
+                "HLT": "both",
+                "automatic_pairing": true
             };
             me.sample_inputs.push(input);
         }
@@ -338,16 +340,13 @@ function Request_controller($http, $modal, $location, $anchorScroll, $scope, $ro
         return modal_inst;
     };
     console.log($scope.param);
-    console.log("hash");
-    console.log($location.hash());
-    console.log("vieta:");
-    console.log(window.location.href);
-    console.log("host url");
+    console.log("hash", $location.hash());
+    console.log("window location", window.location.href);
 
 // init stuff
     $scope.param = $routeParams.param;
-    console.log($scope.param);
-    console.log($routeParams.param);
+    console.log("param", $scope.param);
+    console.log("routeParam", $routeParams.param);
 
     reset_sample_inputs();
     this.get_user_info()

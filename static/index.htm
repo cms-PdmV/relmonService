@@ -62,6 +62,15 @@
                 <label class="btn btn-primary" ng-model="category.HLT" btn-radio="'only'">Only HLT</label>
                 <label class="btn btn-primary" ng-model="category.HLT" btn-radio="'both'">Both</label>
               </div>
+              <div class="pull-right">
+                Pairing mode:
+                <button ng-show="category.automatic_pairing" class="btn btn-primary" type="button" ng-click="category.automatic_pairing=false" rel="tooltip" title="Comparison will use automatic pairing">
+                  <span>Auto</span>
+                </button>
+                <button ng-show="!category.automatic_pairing" class="btn btn-warning" type="button" ng-click="category.automatic_pairing=true" rel="tooltip" title="Will use manual pairing">
+                  <span>Manual</span>
+                </button>
+              </div>
           </tab>
          <!--  <button class="material-icons" ng-click="addForm">add</button>
           <form class="form-inline">
