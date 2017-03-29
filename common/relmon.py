@@ -455,13 +455,12 @@ class Reporter(Thread):
                 logger.info("Worker %s acquired task: %s" % (self.worker_name, func))
                 func(*args, **kargs)
             except Exception, e:
-                logger.error("Exception in thread: %s Traceback:\n%s" % (
-                        str(e), traceback.format_exc()))
-                logger.error("Exception in %s thread: %s Traceback:\n%s" % (
+                logger.error("Exception in '%s' thread: %s Traceback:\n%s" % (
                         self.worker_name, str(e), traceback.format_exc()))
 
-                self.tasks.task_done() ## do we want to mark task_done if it crashed?
-            self.tasks.task_done()
+            finally:
+                ##mark the task done in any case
+                self.tasks.task_done()
 
 reports_queue = ThreadPool('Class_Comparer')
 downloads_queue = ThreadPool('Belarus_Downloader')
