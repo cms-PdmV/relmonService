@@ -91,10 +91,10 @@ class Controller(threading.Thread):
                             self._make_report()
                             self.request.status = "comparing"
                             shared.update(self.request.id_)
-                logger.debug("Going to sleep for 30sec")
+                logger.debug("Going to sleep for 120sec")
             except Exception as ex:
                 logger.info("something went wrong. Crashed on Controler.run: %s" % (str(ex)))
-            time.sleep(30)
+            time.sleep(120)
 
     def _update_statuses(self):
         logger.info("Request id: %s" % (self.request.id_))
