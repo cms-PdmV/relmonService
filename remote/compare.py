@@ -91,16 +91,17 @@ local_reports = os.path.join(local_relmon_request, "reports")
 if (os.path.isdir(local_reports)):
     shutil.rmtree(local_reports)
 
-logger.info("local_reports::: %s " %local_reports)
+logger.info("local_reports: %s " %local_reports)
 
 # TODO: handle failures
 logFile = open(str(request.id_) + ".log", "w")
 os.chmod(str(request.id_) + ".log", 0664)
 
 remote_reports = os.path.join(CONFIG.RELMON_PATH, request.name)
-if (os.path.isdir(remote_reports)):
-    shutil.rmtree(remote_reports)
-logger.info("remote_reports:: %s" %remote_reports)
+##this removes/clean_ups remote directories if they already exists
+#if (os.path.isdir(remote_reports)):
+#    shutil.rmtree(remote_reports)
+logger.info("remote_reports: %s" %remote_reports)
 
 def upload_log():
     global request
