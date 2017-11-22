@@ -29,7 +29,7 @@ from config import CONFIG
 HYPERLINK_REGEX = re.compile(r"href=['\"]([-\._a-zA-Z/\d]*)['\"]")
 SAMLIDP_REGEX = re.compile(r"(_saml_idp)\s+([a-zA-z\d_]+)")
 SHIBSESSION_REGEX = re.compile(r"(_shibsession_[a-zA-z\d_]+)\s+([a-zA-z\d_]+)")
-CMSSW_VERSION_REGEX = re.compile(r"CMSSW_\d_\d_")
+CMSSW_VERSION_REGEX = re.compile(r"CMSSW_[0-9]+_[0-9]+_")
 
 logger = logging.getLogger(__name__)
 logger.addHandler(NullHandler())
