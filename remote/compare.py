@@ -127,24 +127,34 @@ def upload_log():
 # TODO: think of other ways for controllers to know about failures/success
 def put_status(status):
     global logFile, request
-    cookie = None
-    cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
-    if (cookie is None):
+    curl_retries = 3
+    ret_status = 000
+
+    for i in xrange(curl_retries):
+        if ret_status == 200:
+            break
+
+        logger.info("Attempt to change relmon status No: %s" % (i + 1))
+        cookie = None
         cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
         if (cookie is None):
-            logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
-            exit(1)
+            cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
+            if (cookie is None):
+                logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
+                exit(1)
 
-    status, data = utils.https(
-        "PUT",
-        CONFIG.SERVICE_HOST,
-        CONFIG.SERVICE_BASE + "/requests/" + str(request.id_) + "/status",
-        data=json.dumps({"value": status}),
-        headers={"Cookie": cookie})
+        ret_status, data = utils.https(
+            "PUT",
+            CONFIG.SERVICE_HOST,
+            CONFIG.SERVICE_BASE + "/requests/" + str(request.id_) + "/status",
+            data=json.dumps({"value": status}),
+            headers={"Cookie": cookie})
 
-    if (status != httplib.OK):
+
+    if (ret_status != httplib.OK):
         # FIXME: solve this problem
         logger.error("Failed updating status")
+        logger.error("Return data:\n%s" % (data))
 
 def finalize_report_generation(status):
     logger.info("Finalizing RelMon report production with satus: " + status)
