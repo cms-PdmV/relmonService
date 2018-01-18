@@ -122,7 +122,8 @@ def upload_log():
 
     if (status != httplib.OK):
         # FIXME: solve this problem
-        print("PUT log fail")
+        logger.error("PUT log fail")
+        logger.error("Return data:\n%s" % (data))
 
 # TODO: think of other ways for controllers to know about failures/success
 def put_status(status):
