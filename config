@@ -18,7 +18,7 @@ final_wm_statuses = [
 
 [strings]
 cmsweb_host = cmsweb.cern.ch
-remote_cmssw_dir = /build/anorkus/RelMon/CMSSW/gitDEV/CMSSW_10_0_0
+remote_cmssw_dir = /build/anorkus/RelMon/CMSSW/gitDEV/CMSSW_7_4_0
 remote_user = pdmvserv
 host_cert_path = /etc/pki/tls/certs/localhost.crt
 wmstats_url = /couchdb/reqmgr_workload_cache
