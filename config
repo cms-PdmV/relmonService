@@ -38,7 +38,7 @@ service_base = /relmonsvc
 host_key_path = /etc/pki/tls/private/localhost.key
 certificate_path = /afs/cern.ch/user/p/pdmvserv/private/voms_proxy.cert
 remote_host = cmsdev13.cern.ch
-service_host = cms-pdmv-dev.cern.ch
+service_host = cms-pdmv.cern.ch
 
 [ints]
 time_between_status_updates = 120
