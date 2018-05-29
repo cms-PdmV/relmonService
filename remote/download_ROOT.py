@@ -56,11 +56,11 @@ logger.addHandler(handler)
 
 # get relmon
 cookie = None
-cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
+cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST+CONFIG.SERVICE_BASE)
 if (cookie is None):
-    cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
+    cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST+CONFIG.SERVICE_BASE)
     if (cookie is None):
-        logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
+        logger.error("Failed getting sso cookies for %s" %(CONFIG.SERVICE_HOST+CONFIG.SERVICE_BASE))
         exit(1)
 
 status, data = utils.httpsget(
@@ -69,8 +69,10 @@ status, data = utils.httpsget(
     headers={"Cookie": cookie})
 
 if (status != httplib.OK):
-    # FIXME: solve this problem
+    # FIXME: solve this proble
+    logger.error(CONFIG.SERVICE_HOST + CONFIG.SERVICE_BASE + "/requests/" + str(args.id_))
     logger.error("Failed getting RelMon request. Status: " + str(status))
+    logger.error("data:\n%s" % (data))
     exit(1)
 
 request = relmon.RelmonRequest(**json.loads(data))

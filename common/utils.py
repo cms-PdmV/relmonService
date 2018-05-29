@@ -247,14 +247,16 @@ def https(method,
 def get_sso_cookie(url):
     sso_cookie_proc = subprocess.Popen(
             ["cern-get-sso-cookie", "-u", url, "-o", "cookie.txt"],
-            subprocess.PIPE, stderr=subprocess.PIPE)
-
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = sso_cookie_proc.communicate()
+
     if stdout:
-        logger.info(stdout)
+        logger.info("get_cookie STDOUT: %s" % (stdout))
     if stderr:
-        logger.error(stderr)
+        logger.error("cookie STDERR: %s" % (stderr))
+
     sso_cookie_proc_return = sso_cookie_proc.wait()
+
     if (sso_cookie_proc_return != 0):
         logger.error("Getting cern sso cookie for " + url +
                      " failed. Code:" + str(sso_cookie_proc_return))

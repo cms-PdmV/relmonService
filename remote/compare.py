@@ -63,11 +63,11 @@ with open(CONFIG.CREDENTIALS_PATH) as cred_file:
 
 # get RelMon
 cookie = None
-cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
+cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST+CONFIG.SERVICE_BASE)
 if (cookie is None):
-    cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
+    cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST+CONFIG.SERVICE_BASE)
     if (cookie is None):
-        logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
+        logger.error("Failed getting sso cookies for %s" % (CONFIG.SERVICE_HOST+CONFIG.SERVICE_BASE))
         exit(1)
 
 status, data = utils.httpsget(
@@ -106,11 +106,11 @@ logger.info("remote_reports: %s" %remote_reports)
 def upload_log():
     global request
     cookie = None
-    cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
+    cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST+CONFIG.SERVICE_BASE)
     if (cookie is None):
-        cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
+        cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST+CONFIG.SERVICE_BASE)
         if (cookie is None):
-            logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
+            logger.error("Failed getting sso cookies for %s" % (CONFIG.SERVICE_HOST+CONFIG.SERVICE_BASE))
             exit(1)
 
     status, data = utils.https(
@@ -137,11 +137,11 @@ def put_status(status):
 
         logger.info("Attempt to change relmon status No: %s" % (i + 1))
         cookie = None
-        cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
+        cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST+CONFIG.SERVICE_BASE)
         if (cookie is None):
-            cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST)
+            cookie = utils.get_sso_cookie(CONFIG.SERVICE_HOST+CONFIG.SERVICE_BASE)
             if (cookie is None):
-                logger.error("Failed getting sso cookies for " + CONFIG.SERVICE_HOST)
+                logger.error("Failed getting sso cookies for %s" % (CONFIG.SERVICE_HOST+CONFIG.SERVICE_BASE))
                 exit(1)
 
         ret_status, data = utils.https(
