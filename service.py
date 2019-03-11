@@ -5,8 +5,8 @@ import logging
 import logging.config
 
 from flask import Flask
-from flask.ext.restful import Api
-from flask.ext.cors import CORS
+from flask_restful import Api
+from flask_cors import CORS
 
 from common import utils, controllers
 from resources import resources

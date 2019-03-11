@@ -10,7 +10,7 @@ except ImportError:
 import os
 import json
 
-from flask.ext.restful import Resource
+from flask_restful import Resource
 from flask import request, send_from_directory
 
 import controller
